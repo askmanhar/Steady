@@ -2370,6 +2370,22 @@ async function enablePush(){
     toast('Notifications on. Reminders will find you even when Steady is closed. \ud83d\udc9c');
   }catch(err){ toast('Couldn\u2019t enable notifications here \u2014 on iPhone, Steady must be installed to the Home Screen first (iOS 16.4+).', 5200); }
 }
+async function handleAuthRedirect(){
+  const h = location.hash||'', q = location.search||'';
+  if(!(h.includes('access_token') || q.includes('code='))) return;
+  try{
+    const sb = await sbClient();               // creating the client absorbs the URL session
+    if(q.includes('code=')){ try{ await sb.auth.exchangeCodeForSession(location.href); }catch(e){} }
+    const user = (await sb.auth.getUser()).data.user;
+    if(user){
+      settings.syncOn = true; settings.syncEmail = user.email||''; kvSet('settings',settings);
+      toast('Sync is on. Backing up your journey\u2026 💜');
+      fullSync(false);
+    }
+  }catch(e){}
+  history.replaceState(null, '', location.pathname);
+  renderSync();
+}
 function wireSyncSheet(){
   $('syncCancel').onclick = ()=>sheet('syncBg', false);
   $('syncSend').onclick = async ()=>{
@@ -2720,6 +2736,7 @@ function wireAll(){
   applyTheme(); initSheetDrag();
   renderDial(); renderEmotions(); renderPendingPhotos(); renderTimeline(); renderCharts(); renderCalendar();
   renderReminders(); renderMedCard(); renderQuiet(); renderResList(); renderPool(); greet(); renderSync();
+  handleAuthRedirect();
   if(settings.syncOn) fullSync(false);
   if(!settings.onboarded) sheet('onboardBg');
   setInterval(checkReminders, 20000);
