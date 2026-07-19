@@ -744,7 +744,7 @@ body.dash-open{overflow:hidden}
 
     <p class="group-cap">About</p>
     <div class="group" style="padding:16px">
-      <p style="font-weight:600">Steady <span class="cap num">v2.0</span></p>
+      <p style="font-weight:600">Steady <span class="cap num">v2.1</span></p>
       <p class="body2" style="margin-top:8px">A gentle, private mood journal for noticing how you're doing over time.</p>
       <p class="body2" style="margin-top:8px">Steady is a journaling tool, not a medical device or crisis service. It doesn't diagnose or treat anything, and it isn't a substitute for care from a doctor or therapist.</p>
       <p class="body2" style="margin-top:8px">Everything you write stays on this device. If you turn on sync, it’s also stored privately in your own Steady account — and nowhere else. Photos never leave this device either way.</p>
@@ -1915,7 +1915,7 @@ function entryMetaCols(e){
   const j=arr=>[...new Set(arr)].join('; ');
   return { v:j(ms.map(m=>m.v)), en:(ms.reduce((a,m)=>a+m.en,0)/ms.length).toFixed(1), r:j(ms.map(m=>m.r)), s:j(ms.map(m=>m.s)) };
 }
-const DOC_FOOT = ()=>`<div class="doc-foot">Steady by Ritmann · v2.0 · exported ${new Date().toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'})}</div>`;
+const DOC_FOOT = ()=>`<div class="doc-foot">Steady by Ritmann · v2.1 · exported ${new Date().toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'})}</div>`;
 function logDocHTML(list){
   const rangeStr = list.length ? fmtDM(list[0].ts)+' – '+fmtDM(list[list.length-1].ts) : '';
   let html=`<div class="doc"><div class="doc-top">
@@ -2260,7 +2260,7 @@ async function renderPJ(){
 const STEADY_SYNC = {
   url: 'https://spsigkfzhanzituhtgtt.supabase.co',
   anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwc2lna2Z6aGFueml0dWh0Z3R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NTgxMzIsImV4cCI6MjEwMDAzNDEzMn0.W6G1Hnn5lZYAFm4p6hHwSxt6QWoBXIt0J8Tj5q-fom4',
-  vapid: ''   // ← paste your VAPID PUBLIC key here (SETUP step 4) to activate notifications
+  vapid: 'BNxSDBdTcwz57RhlRCDRhgX2N8SgyxYm5qWT3HzFC2xOa3Np3UBZvP6GAKJcIfkNCFzTAkkO6EKEkKimY9bUd5c'
 };
 let _sb = null, _syncTimer = null, _syncBusy = false, _pendingEmail = '';
 async function sbClient(){
