@@ -1,0 +1,13 @@
+{
+  "name": "Steady",
+  "short_name": "Steady",
+  "description": "A gentle, private mood journal.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F6FA",
+  "theme_color": "#F7F6FA",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

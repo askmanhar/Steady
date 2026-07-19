@@ -1,0 +1,2399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Steady</title>
+<meta name="description" content="A gentle, private mood journal.">
+<meta name="theme-color" content="#F7F6FA">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+/* ============ tokens (DESIGN §2) ============ */
+:root{
+  --ground:#F7F6FA; --surface:#FFFFFF; --ink:#2B2733; --ink2:#6E687C;
+  --hair:#E8E5EF; --accent:#6C5CE7; --deep:#4F46B8; --wash:#EFEDFB;
+  --lowheavy:#5B7BD5; --tense:#C95E52; --charged:#D9A441; --settled:#5FA97C;
+  --yours:#8E7CC3; --held:#3E4C7A; --amber-ink:#8A6D1F;
+  --tint:160; --tintsat:30%;
+  --r-card:16px; --r-ctl:12px; --r-chip:10px;
+  --shadow:0 8px 30px rgba(43,39,51,.08);
+  --ease:cubic-bezier(0.32,0.72,0,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:17px}
+body{
+  font-family:ui-rounded,"SF Pro Rounded","Avenir Next","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+  background:var(--ground); color:var(--ink); line-height:1.45;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+}
+.num,.stat b,.dial-num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.hidden{display:none!important}
+
+/* ============ type scale ============ */
+.title{font-size:28px;font-weight:700;line-height:1.15}
+.sec{font-size:20px;font-weight:600;line-height:1.15}
+.body2{font-size:15px;color:var(--ink2)}
+.cap{font-size:13px;color:var(--ink2)}
+.eyebrow{font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+
+/* ============ header & tab bar (DESIGN §3) ============ */
+header{
+  position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px calc(14px);padding-top:calc(14px + env(safe-area-inset-top));
+  background:rgba(247,246,250,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.wordmark{font-family:"Avenir Next","Avenir",ui-rounded,-apple-system,sans-serif;font-size:19px;font-weight:600;letter-spacing:.10em}
+.byline{font-size:10px;color:var(--ink2);letter-spacing:.02em;margin-top:1px}
+body.dark{--ground:#16141B;--surface:#201D28;--ink:#ECE9F2;--ink2:#A69EB8;--hair:#302C3B;
+  --wash:#2B2638;--accent:#8B7CF0;--deep:#B9AEF4;--amber-ink:#D8B45A;
+  --shadow:0 8px 30px rgba(0,0,0,.35)}
+body.dark .chip{background:var(--surface);border-color:var(--hair)}
+body.dark .chip.tile{background:#2B2638}
+body.dark input[type=text],body.dark input[type=date],body.dark input[type=time],body.dark select,body.dark textarea{background:#2B2638}
+body.dark .seg{background:#2B2638}
+body.dark .seg button.on{background:#3A3448;color:var(--ink)}
+body.dark .optgrid button{border-color:var(--hair)}
+body.dark .toast{background:#ECE9F2;color:#16141B}
+body.dark header{background:rgba(22,20,27,.86)}
+body.dark nav{background:rgba(32,29,40,.9)}
+body.dark .cal-day{background:var(--surface)}
+body.dark .bar-track{background:#2B2638}
+body.dark .stat{background:var(--surface)}
+body.dark .quiet-pill{border-color:var(--hair)}
+.themepill{position:relative;width:64px;height:32px;border-radius:99px;background:var(--wash);flex-shrink:0}
+.themepill i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--surface);
+  box-shadow:0 2px 6px rgba(0,0,0,.2);display:grid;place-items:center;font-size:14px;transition:transform .26s var(--ease)}
+.themepill.dark i{transform:translateX(32px)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quiet-pill{font-size:13px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--hair);color:var(--ink2);min-height:34px;transition:all .18s var(--ease)}
+.quiet-pill.on{background:var(--wash);border-color:transparent;color:var(--deep)}
+.gear{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;color:var(--ink2)}
+.gear:active{background:var(--wash)}
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;
+  background:rgba(255,255,255,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--hair);padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{flex:1;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#A29BB3;min-height:52px}
+nav button.on{color:var(--accent)}
+nav svg{width:23px;height:23px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============ layout ============ */
+main{max-width:560px;margin:0 auto;padding:8px 20px 24px}
+.view{display:none}.view.active{display:block;animation:fadein .26s var(--ease)}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.gap{height:28px}
+
+/* cards & groups */
+.card{background:var(--surface);border-radius:var(--r-card);padding:20px;box-shadow:var(--shadow);margin-bottom:28px}
+.group{background:var(--surface);border-radius:var(--r-card);margin-bottom:8px;overflow:hidden}
+.group-cap{font-size:13px;color:var(--ink2);margin:0 4px 8px}
+.group-foot{font-size:13px;color:var(--ink2);margin:8px 4px 28px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:12px 16px;width:100%;text-align:left;font-size:17px}
+.row + .row, .rowline + .rowline{border-top:1px solid var(--hair)}
+.row .val{color:var(--ink2);font-size:15px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chev{width:8px;height:8px;border-right:1.8px solid #B9B3C6;border-bottom:1.8px solid #B9B3C6;transform:rotate(-45deg)}
+
+/* ============ controls ============ */
+.btn-primary{display:block;width:100%;background:var(--accent);color:#fff;font-size:17px;font-weight:600;padding:15px;border-radius:var(--r-ctl);transition:transform .18s var(--ease)}
+.btn-primary:active{transform:scale(.98)}
+.btn-quiet{display:block;width:100%;background:var(--wash);color:var(--deep);font-size:16px;font-weight:600;padding:14px;border-radius:var(--r-ctl)}
+.pillbtn{font-size:13px;font-weight:600;color:var(--deep);background:var(--wash);padding:6px 12px;border-radius:99px;min-height:30px}
+.textbtn{font-size:15px;font-weight:600;color:var(--deep)}
+.seg{display:flex;background:#ECEAF3;border-radius:12px;padding:3px;gap:2px}
+.seg button{flex:1;font-size:15px;font-weight:600;color:var(--ink2);padding:8px 4px;border-radius:9px;transition:all .18s var(--ease);min-height:38px}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(43,39,51,.10)}
+.switch{position:relative;width:51px;height:31px;flex-shrink:0}
+.switch input{opacity:0;width:100%;height:100%;position:absolute;z-index:2;cursor:pointer;margin:0}
+.switch i{position:absolute;inset:0;background:#E4E1EC;border-radius:99px;transition:background .18s var(--ease)}
+.switch i::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .18s var(--ease)}
+.switch input:checked + i{background:var(--settled)}
+.switch input:checked + i::after{transform:translateX(20px)}
+input[type=text],input[type=date],input[type=time],select,textarea{
+  width:100%;background:#F1EFF6;border:1px solid transparent;border-radius:var(--r-ctl);
+  padding:12px 14px;font-size:16px;min-height:44px;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff}
+label.small{display:block;font-size:13px;color:var(--ink2);margin:0 2px 6px}
+.field{margin-top:16px}
+
+/* ============ chips ============ */
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:500;
+  background:var(--surface);border:1px solid var(--hair);border-radius:var(--r-chip);
+  padding:10px 14px;min-height:44px;color:var(--ink);transition:all .18s var(--ease)
+}
+.chip:active{transform:scale(.97)}
+.chip .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.chip.sel{color:#fff;border-color:transparent}
+.chip.tile{background:#F1EFF6;border-color:transparent;color:var(--ink)}
+.chip.tile.sel{background:var(--ink);color:#fff}
+.chip.ghost{background:transparent;border:1px dashed #CFC9DD;color:var(--ink2)}
+.learn .chip:not(.ghost){box-shadow:0 0 0 2px var(--glow,transparent);animation:pulse 1.6s var(--ease) infinite alternate}
+@keyframes pulse{from{box-shadow:0 0 0 2px var(--glow)}to{box-shadow:0 0 7px 3px var(--glow)}}
+
+/* ============ dial (the signature) ============ */
+.dial-card{position:relative;border-radius:var(--r-card);padding:24px 20px 20px;margin-bottom:6px;box-shadow:var(--shadow);
+  background:radial-gradient(130% 100% at 50% 0%, hsl(var(--tint) var(--tintsat) 90% / .65), var(--surface) 72%);
+  transition:background .5s var(--ease)}
+.dial-glow{position:absolute;inset:-34px -18px;z-index:-1;pointer-events:none;filter:blur(26px);
+  background:radial-gradient(55% 55% at 50% 42%, hsl(var(--tint) var(--tintsat) 62% / .22), transparent 72%);
+  transition:background .5s var(--ease)}
+.dial-num{font-size:88px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.dial-word{font-size:20px;font-weight:600;margin-top:2px}
+.dial-sub{font-size:15px;color:var(--ink2);min-height:22px;margin-top:2px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin-top:6px}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:var(--trackgrad,linear-gradient(90deg,#D8D3E6,#CFC9DF))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;background:#fff;
+  box-shadow:0 3px 10px rgba(43,39,51,.28), inset 0 0 0 3px hsl(var(--tint) 50% 52%);margin-top:-12px}
+input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:var(--trackgrad,#D4CFE2)}
+input[type=range]::-moz-range-thumb{width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid hsl(var(--tint) 45% 55%);box-shadow:0 3px 10px rgba(43,39,51,.22)}
+.dial-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);opacity:.6}
+
+/* ============ sections on ground ============ */
+.sechead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 12px}
+.sechead .cap{font-weight:500}
+.emo-group{margin-bottom:20px}
+.emo-group h4{font-size:13px;font-weight:500;color:var(--ink2);margin:0 2px 9px}
+.textrow{font-size:15px;font-weight:600;color:var(--deep);padding:10px 2px;min-height:44px;display:flex;align-items:center}
+
+/* photos */
+.photo-strip{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.photo-strip img{width:64px;height:64px;object-fit:cover;border-radius:12px}
+.photo-add{width:64px;height:64px;border-radius:12px;border:1.5px dashed #CFC9DD;color:var(--ink2);font-size:24px;display:grid;place-items:center}
+
+/* ============ log ============ */
+.day-head{font-size:15px;font-weight:600;color:var(--deep);margin:26px 2px 4px}
+.entry{display:flex;gap:14px;padding:14px 2px;border-bottom:1px solid var(--hair);align-items:flex-start}
+.squircle{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:19px;flex-shrink:0}
+.squircle.skip{background:var(--wash);color:var(--ink2)}
+.entry-body{flex:1;min-width:0}
+.entry-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.entry-when{font-size:13px;color:var(--ink2)}
+.entry-emos{font-size:15px;font-weight:500;margin-top:3px;line-height:1.7}
+.entry-acts{font-size:13px;color:var(--ink2);margin-top:2px}
+.entry-note{font-size:15px;color:var(--ink2);margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.entry-photos{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.entry-photos img{width:56px;height:56px;object-fit:cover;border-radius:10px}
+.banner{background:var(--wash);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--deep);display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+
+/* ============ patterns ============ */
+.calwrap{margin-bottom:28px;position:relative}
+.calbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.calbar .mid{display:flex;align-items:center;gap:4px}
+.calnav{width:38px;height:38px;display:grid;place-items:center;color:var(--deep);font-size:20px;border-radius:10px}
+.calnav:disabled{opacity:.3}
+.caltitle{font-size:15px;font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cal-dow{text-align:center;font-size:11px;color:var(--ink2);font-weight:600;padding-bottom:2px}
+.cal-day{position:relative;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--ink);background:var(--surface)}
+.cal-day.logged{color:#fff}
+.cal-day.skipday{box-shadow:inset 0 0 0 2px var(--yours);color:var(--ink2)}
+.cal-day.noentry::after{content:'';position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#D6D1E2}
+.cal-day.today{box-shadow:inset 0 0 0 2px var(--ink)}
+.cal-day.pre{opacity:.35}
+.cal-day.future{opacity:.35;pointer-events:none}
+.cal-day.blank{background:transparent}
+.cal-day.start::before{content:'✦';position:absolute;top:3px;right:5px;font-size:9px;color:var(--deep)}
+.pop{position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:70;background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;font-size:13px;color:var(--ink2);width:min(300px,86vw);line-height:1.7}
+.chart{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--ink2);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend .line{width:14px;height:2.5px;border-radius:2px;vertical-align:2px}
+.note-amber{font-size:13px;color:var(--amber-ink);margin-top:10px}
+.bar-item{margin-bottom:16px}
+.bar-lab{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;margin-bottom:6px}
+.bar-lab .num{color:var(--ink2);font-size:14px}
+.bar-track{height:7px;border-radius:99px;background:#F1EFF6;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;transition:width .5s var(--ease)}
+.disclosure{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 2px;font-size:17px;font-weight:600;min-height:52px}
+.disclosure .chev{transition:transform .26s var(--ease)}
+.disclosure.open .chev{transform:rotate(45deg)}
+.deep-sec{margin-top:32px}
+.deep-sec:first-child{margin-top:16px}
+.deep-title{font-size:16px;font-weight:600}
+.deep-cap{font-size:12px;color:var(--ink2);margin:2px 0 18px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+.stat{background:var(--surface);border-radius:14px;padding:14px 8px;text-align:center}
+.stat b{display:block;font-size:24px;font-weight:700}
+.stat span{font-size:12px;color:var(--ink2)}
+
+/* ============ sheets ============ */
+.sheet-bg{position:fixed;inset:0;z-index:90;background:rgba(43,39,51,.32);display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.open{display:flex;animation:dim .26s var(--ease)}
+@keyframes dim{from{background:rgba(43,39,51,0)}to{background:rgba(43,39,51,.32)}}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
+  padding:8px 20px calc(24px + env(safe-area-inset-bottom));box-shadow:var(--shadow);animation:up .26s var(--ease)}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.handle{width:36px;height:5px;border-radius:99px;background:#DDD8E8;margin:6px auto 16px}
+.sheet h2{font-size:20px;font-weight:600;margin-bottom:6px}
+.sheet .lead{font-size:15px;color:var(--ink2)}
+@media(min-width:640px){
+  .sheet-bg{align-items:center}
+  .sheet{border-radius:20px;max-height:82vh;animation:pop .26s var(--ease)}
+  @keyframes pop{from{transform:scale(.97);opacity:.4}to{transform:none;opacity:1}}
+}
+.z2{z-index:110}
+.z3{z-index:130}
+.z4{z-index:170}
+.tilerow{display:flex;gap:9px;overflow-x:auto;padding:14px;background:var(--wash);border-radius:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tilerow::-webkit-scrollbar{display:none}
+.tilerow .chip{flex-shrink:0}
+.rangebar{position:sticky;top:58px;z-index:40;background:var(--ground);margin:0 -20px 20px;padding:8px 20px 10px}
+.periodbar{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.periodbar .plabel{font-size:14px;font-weight:600}
+.logcal{position:sticky;top:58px;z-index:40;background:var(--ground);margin:0 -20px 14px;padding:6px 20px 10px;position:sticky}
+.logcal .monthpanel{position:absolute;left:20px;right:20px;top:100%;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:14px;z-index:45}
+.cal-day.selday{box-shadow:inset 0 0 0 2px var(--accent)}
+.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.notehead{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.photo-add{flex-direction:column;gap:2px;font-size:16px}
+.photo-add small{font-size:9px;color:var(--ink2)}
+.editbar{background:var(--wash);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--deep);display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
+.doc-foot{font-size:11px;color:var(--ink2);margin-top:26px;padding-top:10px;border-top:1px solid var(--hair);text-align:center}
+
+/* range option grid (consent) */
+.optgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.optgrid button{border:1px solid var(--hair);border-radius:12px;padding:11px 8px;font-size:14px;font-weight:600;color:var(--ink2);min-height:44px}
+.optgrid button.on{background:var(--wash);border-color:transparent;color:var(--deep)}
+
+/* swatches */
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.swatch{width:34px;height:34px;border-radius:50%;border:2.5px solid transparent}
+.swatch.sel{border-color:var(--ink)}
+.dim-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.dim-pill{padding:5px 13px;border-radius:99px;font-size:13px;font-weight:600}
+.dim-badge{background:var(--wash);color:var(--deep);padding:6px 13px;border-radius:99px;font-size:13px;font-weight:600}
+.dim-badge em{font-style:normal;font-weight:400;opacity:.65;font-size:11px;margin-left:5px}
+.dim-energy{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--ink2)}
+.dim-energy em{font-style:normal;margin-left:5px}
+.edot{width:9px;height:9px;border-radius:50%;background:#E7E3F0;display:inline-block}
+.edot.on{background:var(--charged)}
+
+/* crisis card */
+.crisis{background:var(--surface);border-radius:var(--r-card);padding:20px;box-shadow:var(--shadow);margin-top:20px;border:1px solid var(--wash)}
+.res-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.res-line:last-child{border-bottom:none}
+.res-line a{text-decoration:none;background:var(--wash);color:var(--deep);padding:6px 14px;border-radius:99px;font-size:13px;font-weight:600;flex-shrink:0}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;font-size:14px;padding:11px 18px;border-radius:12px;opacity:0;pointer-events:none;
+  transition:all .26s var(--ease);z-index:200;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.preview{background:var(--wash);color:var(--deep);font-size:13px;text-align:center;padding:8px 14px}
+
+/* ============ dashboards — clinical documents (DESIGN §7) ============ */
+#dashOverlay{position:fixed;inset:0;z-index:150;background:#fff;overflow-y:auto;display:none}
+body.dash-open #dashOverlay{display:block}
+body.dash-open{overflow:hidden}
+.doc{max-width:640px;margin:0 auto;padding:28px 28px 60px}
+.doc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.doc h1{font-size:22px;font-weight:700}
+.doc-meta{font-size:13px;color:var(--ink2);margin-top:4px}
+.doc hr{border:none;border-top:1px solid var(--hair);margin:18px 0}
+.doc-sec{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:22px 0 10px}
+.doc .stat b{font-size:28px}
+.doc-row{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.doc-row .d{color:var(--ink2);font-size:13px}
+@media print{
+  @page{size:A4;margin:12mm}
+  body.dash-open > *:not(#dashOverlay){display:none!important}
+  body.dash-open{overflow:visible;background:#fff}
+  #dashOverlay{position:static;overflow:visible}
+  .no-print{display:none!important}
+  .doc{max-width:none;padding:0}
+  .doc *{box-shadow:none!important}
+}
+
+/* motion preferences */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="preview hidden" id="previewBanner">Preview mode — storage isn't available here, so entries won't persist. They will once Steady is installed or opened directly.</div>
+
+<header>
+  <div><div class="wordmark">STEADY.</div><div class="byline">by Ritmann</div></div>
+  <div class="hdr-right">
+    <button class="quiet-pill" id="quietBtn" aria-pressed="false">Quiet</button>
+    <button class="gear" id="gearBtn" aria-label="Settings">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.5h4l.4-2.5a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= TODAY ================= -->
+<section class="view active" id="view-today">
+  <div class="dial-card">
+    <div class="dial-glow" aria-hidden="true"></div>
+    <div class="eyebrow" id="greet">How are you right now?</div>
+    <div class="dial-num num" id="dialNum">5</div>
+    <div class="dial-word" id="dialWord">Steady</div>
+    <div class="dial-sub" id="dialSub"></div>
+    <input type="range" id="dial" min="1" max="10" step="1" value="5" aria-label="Mood from 1 to 10">
+    <div class="dial-ends"><span id="endLow">1 · severe low</span><span id="endHigh">10 · very high energy</span></div>
+  </div>
+
+  <div class="group hidden" id="medCard" style="margin-top:22px">
+    <div class="row" style="min-height:auto;padding-bottom:6px">
+      <span class="cap" style="font-weight:600">Medicine today</span>
+    </div>
+    <div id="medRows"></div>
+  </div>
+
+  <div class="editbar hidden" id="editBar"><span></span><button class="pillbtn" id="editCancel" style="background:var(--surface)">cancel</button></div>
+
+  <div class="gap"></div>
+  <div class="sechead">
+    <span class="cap">What's present?</span>
+    <button class="pillbtn" id="glossBtn">ⓘ what these mean</button>
+  </div>
+  <div id="emoGroups"></div>
+
+  <div class="gap"></div>
+  <div class="sechead"><span class="cap">What's happening? — optional</span></div>
+  <div class="tilerow" id="tileChips"></div>
+
+  <div class="gap"></div>
+  <div class="notehead"><label class="small" for="note" style="margin:0">A note, if you'd like</label>
+    <button class="pillbtn" id="noteExpand" aria-label="Write full screen">⤢ expand</button></div>
+  <textarea id="note" rows="3" placeholder="No pressure. A word, a sentence, a whole page…"></textarea>
+  <div class="photo-strip" id="photoStrip">
+    <button class="photo-add" id="photoAdd" aria-label="Add a photo to this entry">📷<small>photo</small></button>
+  </div>
+  <input type="file" id="photoInput" accept="image/*" multiple class="hidden">
+
+  <div style="margin-top:24px">
+    <button class="btn-primary" id="saveBtn">Save entry</button>
+    <button class="btn-quiet" id="skipBtn" style="margin-top:10px">Not today — just mark that I was here</button>
+    <p class="cap" style="text-align:center;margin-top:8px">Skipping is okay. It's recorded quietly, with no details.</p>
+  </div>
+
+  <div class="crisis hidden" id="crisisCard">
+    <p style="font-weight:600">That sounds really heavy. You don't have to carry it alone.</p>
+    <p class="body2" style="margin-top:6px">Your entry is saved. If you'd like someone to talk to right now, these lines are free and confidential.</p>
+    <div id="crisisLines" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ================= PATTERNS ================= -->
+<section class="view" id="view-patterns">
+  <div class="calwrap">
+    <div class="calbar">
+      <button class="calnav" id="calPrev" aria-label="Previous">‹</button>
+      <div class="mid">
+        <span class="caltitle" id="calTitle">This week</span>
+        <button class="pillbtn" id="calInfo" aria-label="What the marks mean" style="padding:4px 9px">ⓘ</button>
+      </div>
+      <button class="calnav" id="calNext" aria-label="Next">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div style="text-align:center;margin-top:10px"><button class="textbtn" id="calToggle">Month ▾</button></div>
+    <div class="pop hidden" id="calPop">
+      Color = that day's average mood.<br>
+      Soft ring = you chose not to log.<br>
+      Faint dot = no entry — never a mark against you.<br>
+      ✦ = day one of your journey. Ink ring = today.
+    </div>
+  </div>
+
+  <div class="rangebar">
+    <div class="seg" id="rangeSeg">
+      <button data-range="day">Day</button>
+      <button class="on" data-range="week">Week</button>
+      <button data-range="month">Month</button>
+      <button data-range="year">Year</button>
+    </div>
+    <div class="periodbar">
+      <button class="calnav" id="perPrev" aria-label="Previous period">‹</button>
+      <span class="plabel num" id="perLabel"></span>
+      <button class="calnav" id="perNext" aria-label="Next period">›</button>
+    </div>
+  </div>
+
+  <div class="stat-grid" id="statGrid"></div>
+
+  <div class="card">
+    <div class="sechead" style="margin-bottom:14px"><span class="cap" style="font-weight:600">Mood &amp; energy</span></div>
+    <div id="lineChart"></div>
+    <div id="energyChart"></div>
+    <div class="legend" id="lineLegend"></div>
+    <div id="chartNotes"></div>
+  </div>
+
+  <div class="sechead">
+    <span class="cap" style="font-weight:600">What shows up</span>
+    <button class="pillbtn" id="emoDrill">drill down</button>
+  </div>
+  <div id="emoChart" style="margin-bottom:8px"></div>
+
+  <button class="disclosure" id="deepRow" aria-expanded="false">A gentle look deeper <span class="chev"></span></button>
+  <div id="deepBody" class="hidden"></div>
+</section>
+
+<!-- ================= LOG ================= -->
+<section class="view" id="view-timeline">
+  <div class="logcal">
+    <div class="calbar" style="margin-bottom:8px">
+      <button class="calnav" id="lcPrev" aria-label="Previous week">‹</button>
+      <span class="caltitle" id="lcTitle">This week</span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="pillbtn" id="lcMonthBtn">Month ▾</button>
+        <button class="calnav" id="lcNext" aria-label="Next week">›</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="lcGrid"></div>
+    <div class="monthpanel hidden" id="lcMonthPanel">
+      <div class="calbar" style="margin-bottom:8px">
+        <button class="calnav" id="lcmPrev">‹</button>
+        <span class="caltitle" id="lcmTitle"></span>
+        <button class="calnav" id="lcmNext">›</button>
+      </div>
+      <div class="cal-grid" id="lcmGrid"></div>
+    </div>
+  </div>
+  <div class="banner hidden" id="logFilterBar"><span></span>
+    <span style="display:flex;gap:6px">
+      <button class="pillbtn" id="logFilterClear" style="background:var(--surface)">clear</button>
+      <button class="pillbtn" id="logFilterBack" style="background:var(--surface)">back</button>
+    </span></div>
+  <div id="timeline"></div>
+</section>
+
+<!-- ================= CARE ================= -->
+<section class="view" id="view-care">
+  <p class="group-cap">Share with your care team</p>
+  <div class="group">
+    <button class="row" id="dashPsy">Psychiatrist snapshot <span class="val"><span class="chev"></span></span></button>
+    <button class="row" id="dashTher">Therapist view <span class="val"><span class="chev"></span></span></button>
+  </div>
+  <p class="group-foot">Two read-only views made for appointments — you choose what's included before anything is shown.</p>
+
+  <p class="group-cap">Reminders</p>
+  <div class="group" id="remGroup">
+    <div id="remList"></div>
+    <button class="row" id="remAdd" style="color:var(--deep);font-weight:600">Add a reminder <span class="val">+</span></button>
+  </div>
+  <p class="group-foot">Reminders ring while Steady is open. Quiet mode pauses mood check-ins; medicine reminders always ring.</p>
+
+  <p class="group-cap">Support lines</p>
+  <div class="group" style="padding:4px 16px" id="resList"></div>
+  <p class="group-foot">Free and confidential. Region can be changed in <span class="textbtn" id="careToSettings" style="cursor:pointer">Settings</span>.</p>
+</section>
+
+</main>
+
+<nav>
+  <button class="on" data-view="today" aria-label="Today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg>Today</button>
+  <button data-view="patterns" aria-label="Patterns"><svg viewBox="0 0 24 24"><path d="M3.5 17.5 9 11l4 3.5 7.5-8.5"/><path d="M15.5 6h5v5"/></svg>Patterns</button>
+  <button data-view="timeline" aria-label="Log"><svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>Log</button>
+  <button data-view="care" aria-label="Care"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9.4C1.5 7.4 3.6 4.5 6.7 4.5c2 0 3.6 1.1 4.3 2.7l1-.001c.7-1.6 2.3-2.7 4.3-2.7 3.1 0 5.2 2.9 4 6.1C18.5 15.4 12 20 12 20Z"/></svg>Care</button>
+</nav>
+
+<!-- ================= SHEETS ================= -->
+
+<div class="sheet-bg" id="onboardBg">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Welcome to Steady</h2>
+    <p class="lead">A gentle place to notice how you're doing. Everything stays on this device. Steady is a journaling tool, not a medical device or crisis service.</p>
+    <div class="field"><label class="small" for="obName">Your name (optional)</label><input type="text" id="obName" placeholder="How should Steady greet you?"></div>
+    <div class="field">
+      <label class="small">How should the scale feel?</label>
+      <div class="seg" id="obScaleSeg">
+        <button class="on" data-scale="anchored">Anchored</button>
+        <button data-scale="simple">Simple</button>
+      </div>
+      <p class="cap" style="margin-top:8px" id="obScaleHint">Anchored: 5–6 is steady, both ends are intense — suited to bipolar / BPD.</p>
+    </div>
+    <div class="field">
+      <label class="small" for="obRegion">Where are you? (for support lines)</label>
+      <select id="obRegion">
+        <option value="IN">India</option><option value="US">US &amp; Canada</option>
+        <option value="UK">UK &amp; Ireland</option><option value="AU">Australia</option>
+        <option value="OTHER">Somewhere else</option>
+      </select>
+    </div>
+    <button class="btn-primary" id="obGo" style="margin-top:22px">Begin</button>
+  </div>
+</div>
+
+<div class="sheet-bg z3" id="emoModalBg">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2 id="emoModalTitle">Add your own emotion</h2>
+    <p class="lead">Your words are often truer than anyone else's list.</p>
+    <div class="field"><input type="text" id="emoNew" placeholder="e.g. untethered, foggy, buzzing…" maxlength="24"></div>
+    <div class="field"><label class="small" for="emoGroupSel">Which cluster does it belong to?</label>
+      <select id="emoGroupSel">
+        <option value="Yours">Yours (its own space)</option>
+        <option value="Low & heavy">Low &amp; heavy</option><option value="Tense">Tense</option>
+        <option value="Charged">Charged</option><option value="Settled">Settled</option>
+      </select></div>
+    <div class="field"><label class="small">A color that feels right</label>
+      <div class="swatches" id="swatches"></div>
+      <input type="color" id="emoSpectrum" value="#8E7CC3" style="margin-top:10px;height:44px;padding:4px">
+    </div>
+    <details class="field" id="metaWrap">
+      <summary style="font-size:14px;font-weight:600;cursor:pointer;min-height:44px;display:flex;align-items:center">Describe it (optional)</summary>
+      <div class="field"><label class="small" for="metaV">Does it lean pleasant or unpleasant?</label>
+        <select id="metaV"><option>Neutral</option><option>Positive</option><option>Negative</option><option>Mixed</option></select></div>
+      <div class="field"><label class="small" for="metaE">How much energy does it carry?</label>
+        <select id="metaE"><option value="1">Very low</option><option value="2">Low</option><option value="3" selected>Medium</option><option value="4">High</option><option value="5">Very high</option></select></div>
+      <div class="field"><label class="small" for="metaR">How manageable does it usually feel?</label>
+        <select id="metaR"><option value="Regulated">Usually manageable</option><option value="Vulnerable">Can tip into overwhelm</option><option value="Dysregulated">Hard to steer</option><option value="Dissociative">Distant or foggy</option></select></div>
+      <div class="field"><label class="small" for="metaS">Does it pull you toward or away from people?</label>
+        <select id="metaS"><option>Neutral</option><option value="Connection">Toward people</option><option value="Disconnection">Away from people</option></select></div>
+    </details>
+    <button class="btn-primary" id="emoSave" style="margin-top:20px">Save</button>
+    <button class="btn-quiet" id="emoCancel" style="margin-top:10px">Cancel</button>
+    <button class="row hidden" id="emoDelete" style="justify-content:center;color:var(--ink2);font-weight:600">Remove this emotion</button>
+  </div>
+</div>
+
+<div class="sheet-bg z4" id="harmBg">
+  <div class="sheet" style="max-width:440px">
+    <div class="handle"></div>
+    <h2>Held close</h2>
+    <p class="lead">Some words are heavy enough that Steady keeps just one place for them. "Bad thoughts" can hold this — and real support is one tap away.</p>
+    <button class="btn-primary" id="harmUse" style="margin-top:20px">Use "Bad thoughts"</button>
+    <button class="btn-quiet" id="harmLines" style="margin-top:10px">See support lines</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="tilePickBg">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>What's happening?</h2>
+    <p class="lead">Pick a few that fit your life, or write your own. No judgment attached to any of them.</p>
+    <div class="chips field" id="starterChips"></div>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:2"><label class="small" for="tileNew">Your own</label><input type="text" id="tileNew" placeholder="e.g. painting, night shift…" maxlength="20"></div>
+      <div style="flex:1"><label class="small" for="tileEmoji">Emoji</label><input type="text" id="tileEmoji" placeholder="optional" maxlength="4"></div>
+    </div>
+    <button class="btn-primary" id="tilePickSave" style="margin-top:20px">Add tiles</button>
+    <button class="btn-quiet" id="tilePickCancel" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div class="sheet-bg z3" id="tileEditBg">
+  <div class="sheet" style="max-width:440px">
+    <div class="handle"></div>
+    <h2>Edit tile</h2>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:2"><label class="small" for="tileEditName">Name</label><input type="text" id="tileEditName" maxlength="20"></div>
+      <div style="flex:1"><label class="small" for="tileEditEmoji">Emoji</label><input type="text" id="tileEditEmoji" maxlength="4"></div>
+    </div>
+    <button class="btn-primary" id="tileEditSave" style="margin-top:20px">Save</button>
+    <button class="btn-quiet" id="tileEditCancel" style="margin-top:10px">Cancel</button>
+    <button class="row" id="tileEditDelete" style="justify-content:center;color:var(--ink2);font-weight:600">Remove this tile</button>
+  </div>
+</div>
+
+<div class="sheet-bg z3" id="wordBg">
+  <div class="sheet" style="max-width:440px">
+    <div class="handle"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="width:14px;height:14px;border-radius:50%;flex-shrink:0" id="wordDot"></span>
+      <h2 id="wordTitle" style="margin:0"></h2>
+    </div>
+    <p class="lead" id="wordDesc" style="margin-top:10px"></p>
+    <div id="wordDims"></div>
+    <button class="btn-quiet" id="wordOk" style="margin-top:20px">Okay</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="remModalBg">
+  <div class="sheet" style="max-width:440px">
+    <div class="handle"></div>
+    <h2>New reminder</h2>
+    <div class="field"><label class="small" for="remLabel">What for?</label><input type="text" id="remLabel" placeholder="e.g. Lamotrigine 100mg, evening check-in" maxlength="40"></div>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:1"><label class="small" for="remTime">Time</label><input type="time" id="remTime" value="09:00"></div>
+      <div style="flex:1"><label class="small" for="remType">Type</label>
+        <select id="remType"><option value="mood">Mood check-in</option><option value="med">Medicine</option></select></div>
+    </div>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:1"><label class="small" for="remOcc">How often</label>
+        <select id="remOcc"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+      <div style="flex:1 1 0" id="remOccWrap">
+        <div class="hidden" id="remDowWrap"><label class="small" for="remDow">Day</label>
+          <select id="remDow"><option value="0">Sunday</option><option value="1" selected>Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div>
+        <div class="hidden" id="remDomWrap"><label class="small" for="remDom">Day of month</label>
+          <select id="remDom"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option></select></div>
+      </div>
+    </div>
+    <button class="btn-primary" id="remSave" style="margin-top:20px">Save reminder</button>
+    <button class="btn-quiet" id="remCancel" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="shareBg">
+  <div class="sheet" style="max-width:460px">
+    <div class="handle"></div>
+    <h2 id="shareTitle">Share</h2>
+    <p class="lead">Before anything is shown, choose what to include. Nothing leaves this device unless you export it.</p>
+    <div class="row rowline" style="padding-left:0;padding-right:0"><span style="font-size:16px">Include notes?</span><label class="switch"><input type="checkbox" id="shareNotes"><i></i></label></div>
+    <div class="row rowline" style="padding-left:0;padding-right:0"><span style="font-size:16px">Include photos?</span><label class="switch"><input type="checkbox" id="sharePhotos"><i></i></label></div>
+    <div class="field"><label class="small">Range</label>
+      <div class="optgrid" id="shareRangeGrid">
+        <button class="on" data-r="p14">Last 2 weeks</button>
+        <button data-r="p30">Last month</button>
+        <button data-r="since">Since I last shared</button>
+        <button data-r="custom">Custom</button>
+      </div>
+    </div>
+    <div class="field hidden" id="shareCustom" style="display:flex;gap:10px">
+      <div style="flex:1"><label class="small" for="shareFrom">From</label><input type="date" id="shareFrom"></div>
+      <div style="flex:1"><label class="small" for="shareTo">To</label><input type="date" id="shareTo"></div>
+    </div>
+    <button class="btn-primary" id="shareGo" style="margin-top:20px">Open view</button>
+    <button class="btn-quiet" id="shareCancel" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="settingsBg">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 style="margin:0">Settings</h2>
+      <button class="pillbtn" id="settingsClose">Done</button>
+    </div>
+
+    <p class="group-cap">Appearance</p>
+    <div class="group">
+      <div class="row"><span>Theme</span>
+        <button class="themepill" id="themePill" aria-label="Switch light or dark"><i id="themeIcon">☀️</i></button></div>
+    </div>
+    <p class="group-foot"></p>
+
+    <p class="group-cap">Profile</p>
+    <div class="group">
+      <div class="row"><span>Name</span><input type="text" id="setName" placeholder="optional" style="max-width:170px;min-height:38px;padding:8px 12px;text-align:right;background:transparent"></div>
+      <button class="row" id="rowScale">Mood scale <span class="val"><span id="scaleVal">Anchored</span><span class="chev"></span></span></button>
+      <div class="row"><span>Region</span>
+        <select id="regionSel" style="max-width:190px;min-height:38px;padding:8px 12px;background:transparent">
+          <option value="IN">India</option><option value="US">US &amp; Canada</option>
+          <option value="UK">UK &amp; Ireland</option><option value="AU">Australia</option>
+          <option value="OTHER">Somewhere else</option>
+        </select></div>
+    </div>
+    <p class="group-foot"></p>
+
+    <p class="group-cap">Your vocabulary</p>
+    <div class="group">
+      <button class="row" id="rowPool">Emotion pool <span class="val"><span class="chev"></span></span></button>
+      <button class="row" id="rowTiles">Activity tiles <span class="val"><span class="chev"></span></span></button>
+    </div>
+    <p class="group-foot"></p>
+
+    <p class="group-cap">Your data</p>
+    <div class="group" style="padding:14px 16px">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><label class="small" for="expFrom">From</label><input type="date" id="expFrom"></div>
+        <div style="flex:1"><label class="small" for="expTo">To</label><input type="date" id="expTo"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-quiet" id="expCopy" style="flex:1">Copy as text</button>
+        <button class="btn-quiet" id="expPdf" style="flex:1">Save as PDF</button>
+      </div>
+    </div>
+    <div class="group">
+      <button class="row" id="backupBtn">Back up everything <span class="val">Steady JSON</span></button>
+      <button class="row" id="importBtn">Import backup <span class="val">Steady JSON</span></button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+    <p class="group-foot">Photos stay on this device and are never part of exports. Export regularly — your data lives only here.</p>
+
+    <p class="group-cap">About</p>
+    <div class="group" style="padding:16px">
+      <p style="font-weight:600">Steady <span class="cap num">v1.6</span></p>
+      <p class="body2" style="margin-top:8px">A gentle, private mood journal for noticing how you're doing over time.</p>
+      <p class="body2" style="margin-top:8px">Steady is a journaling tool, not a medical device or crisis service. It doesn't diagnose or treat anything, and it isn't a substitute for care from a doctor or therapist.</p>
+      <p class="body2" style="margin-top:8px">Everything you write stays on this device. Steady makes no network connections at all.</p>
+      <p class="cap" style="margin-top:12px">Made with care by Ritmann · ritmann.co</p>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<div class="sheet-bg z2" id="scaleBg">
+  <div class="sheet" style="max-width:440px">
+    <div class="handle"></div>
+    <h2>Mood scale</h2>
+    <div class="seg field" id="scaleSeg">
+      <button data-scale="anchored">Anchored</button>
+      <button data-scale="simple">Simple</button>
+    </div>
+    <p class="cap" style="margin-top:12px">Anchored: 5–6 is steady, both ends are intense — suited to bipolar / BPD.</p>
+    <p class="cap" style="margin-top:4px">Simple: 1 is awful, 10 is great.</p>
+    <button class="btn-quiet" id="scaleClose" style="margin-top:20px">Done</button>
+  </div>
+</div>
+
+<div class="sheet-bg z2" id="poolBg">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Emotion pool</h2>
+    <div class="chips field" id="poolChips"></div>
+    <p class="cap" style="margin-top:16px;font-weight:600;color:var(--ink)">Yours</p>
+    <div id="poolCustoms" style="margin-top:8px"></div>
+    <p class="cap" style="margin-top:16px">If any word doesn't help you — or triggers you — tap it to tuck it away. Tap again to bring it back.</p>
+    <button class="btn-quiet" id="poolClose" style="margin-top:16px">Done</button>
+  </div>
+</div>
+
+<div class="sheet-bg z2" id="tilesBg">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Activity tiles</h2>
+    <div id="poolTiles" class="field"></div>
+    <p class="cap" style="margin-top:16px">Tap a tile to tuck it away or bring it back. New tiles are added from the Today screen.</p>
+    <button class="btn-quiet" id="tilesClose" style="margin-top:16px">Done</button>
+  </div>
+</div>
+
+<div class="sheet-bg z2" id="fullNoteBg">
+  <div class="sheet" style="max-height:94vh">
+    <div class="handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="margin:0">Write freely</h2>
+      <button class="pillbtn" id="fullNoteDone">Done</button>
+    </div>
+    <textarea id="fullNote" style="height:62vh;font-size:17px;line-height:1.6" placeholder="No pressure. A word, a sentence, a whole page…"></textarea>
+  </div>
+</div>
+
+<div class="sheet-bg z4" id="confirmBg">
+  <div class="sheet" style="max-width:400px">
+    <div class="handle"></div>
+    <p id="confirmMsg" style="font-size:16px;font-weight:600"></p>
+    <button class="btn-primary" id="confirmOk" style="margin-top:20px">Remove</button>
+    <button class="btn-quiet" id="confirmNo" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div id="dashOverlay"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ============ storage (IndexedDB steady-v2, in-memory fallback) ============ */
+const mem = { entries:new Map(), photos:new Map(), kv:new Map() };
+let idb = null, previewMode = false;
+function openDB(){
+  return new Promise(res=>{
+    try{
+      const req = indexedDB.open('steady-v2', 1);
+      req.onupgradeneeded = e=>{ const d=e.target.result;
+        d.createObjectStore('entries',{keyPath:'id'}); d.createObjectStore('photos',{keyPath:'id'}); d.createObjectStore('kv'); };
+      req.onsuccess = e=>{ idb=e.target.result; res(true); };
+      req.onerror = ()=>res(false);
+    }catch(err){ res(false); }
+  });
+}
+function tx(store,mode,fn){
+  return new Promise((res,rej)=>{
+    if(!idb){ res(fn(null)); return; }
+    const t=idb.transaction(store,mode), s=t.objectStore(store), out=fn(s);
+    t.oncomplete=()=>res(out&&out.result!==undefined?out.result:out); t.onerror=()=>rej(t.error);
+  });
+}
+async function putEntry(e){ if(idb) await tx('entries','readwrite',s=>s.put(e)); else mem.entries.set(e.id,e); }
+async function delEntry(id){ if(idb) await tx('entries','readwrite',s=>s.delete(id)); else mem.entries.delete(id); }
+async function allEntries(){
+  if(!idb) return [...mem.entries.values()];
+  return new Promise((res,rej)=>{ const r=idb.transaction('entries').objectStore('entries').getAll();
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+}
+async function putPhoto(p){ if(idb) await tx('photos','readwrite',s=>s.put(p)); else mem.photos.set(p.id,p); }
+async function getPhoto(id){
+  if(!idb) return mem.photos.get(id);
+  return new Promise(res=>{ const r=idb.transaction('photos').objectStore('photos').get(id);
+    r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); });
+}
+async function kvSet(k,v){ if(idb) await tx('kv','readwrite',s=>s.put(v,k)); else mem.kv.set(k,v); }
+async function kvGet(k){
+  if(!idb) return mem.kv.get(k);
+  return new Promise(res=>{ const r=idb.transaction('kv').objectStore('kv').get(k);
+    r.onsuccess=()=>res(r.result); r.onerror=()=>res(undefined); });
+}
+
+/* ============ settings & state ============ */
+let settings = {
+  onboarded:false, name:'', scaleMode:'anchored', quiet:false, region:'IN',
+  customEmotions:[], archivedEmotions:[], tiles:[], archivedTiles:[],
+  hiddenEmotions:[], hiddenTiles:[], reminders:[],
+  taken:{}, lastShared:null, medSkipped:{}, theme:'light', journeyStart:null
+};
+let entries = [];
+let selectedEmotions = new Set(), selectedTiles = new Set(), pendingPhotos = [];
+let learnMode = false, heldOpen = false;   // Held close: closed at launch (§0.9)
+let editingEmoId = null, editingTileId = null, logFilterDay = null;
+
+/* ============ registry (stable IDs + metadata) ============ */
+const BUILTINS = [
+ {id:'b_sad',n:'Sad',g:'Low & heavy',c:'#5B7BD5',d:'Heavy-hearted. Tears may or may not show up — the weight is real either way.',meta:{v:'Negative',en:2,r:'Vulnerable',s:'Neutral'}},
+ {id:'b_hopeless',n:'Hopeless',g:'Low & heavy',c:'#4A5A9E',d:'It feels like nothing will change no matter what you do. (It can — but this is how it feels right now.)',meta:{v:'Negative',en:1,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_empty',n:'Empty',g:'Low & heavy',c:'#7C8BB8',d:'The volume of everything turned down to zero. Not sad exactly — just… nothing.',meta:{v:'Negative',en:1,r:'Dissociative',s:'Disconnection'}},
+ {id:'b_numb',n:'Numb',g:'Low & heavy',c:'#8E9AB5',d:'Feelings are in there somewhere, but you can\'t reach them. Running on autopilot.',meta:{v:'Negative',en:1,r:'Dissociative',s:'Disconnection'}},
+ {id:'b_lonely',n:'Lonely',g:'Low & heavy',c:'#6B87C7',d:'Alone in a way that company doesn\'t always fix. Missing being truly seen.',meta:{v:'Negative',en:2,r:'Vulnerable',s:'Disconnection'}},
+ {id:'b_ashamed',n:'Ashamed',g:'Low & heavy',c:'#5E6C96',d:'That sinking "something is wrong with me" feeling. (There isn\'t — but it\'s loud.)',meta:{v:'Negative',en:2,r:'Vulnerable',s:'Disconnection'}},
+ {id:'b_tired',n:'Tired',g:'Low & heavy',c:'#93A0C4',d:'Beyond sleepy. Body-and-soul drained, like your battery won\'t hold a charge.',meta:{v:'Neutral',en:1,r:'Vulnerable',s:'Neutral'}},
+ {id:'b_anxious',n:'Anxious',g:'Tense',c:'#E08A5C',d:'Mind sprinting ahead to everything that could go wrong. Chest-tight, can\'t-settle energy.',meta:{v:'Negative',en:4,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_overwhelmed',n:'Overwhelmed',g:'Tense',c:'#D96C6C',d:'Too much, all at once — like ten tabs playing sound and you can\'t find which one.',meta:{v:'Negative',en:4,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_irritable',n:'Irritable',g:'Tense',c:'#C95E52',d:'Everything is grating. Small things feel like sandpaper today.',meta:{v:'Negative',en:3,r:'Vulnerable',s:'Disconnection'}},
+ {id:'b_angry',n:'Angry',g:'Tense',c:'#B84A3F',d:'Fire in the chest. Something feels wrong or unfair and your whole body knows it.',meta:{v:'Negative',en:4,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_dysregulated',n:'Dysregulated',g:'Tense',c:'#D4756E',d:'Emotions turned up way past where you set them, and the dial isn\'t responding.',meta:{v:'Negative',en:4,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_dissociated',n:'Dissociated',g:'Tense',c:'#A98BA5',d:'Foggy, floaty, watching your life from a step outside it. Not fully "here."',meta:{v:'Negative',en:2,r:'Dissociative',s:'Disconnection'}},
+ {id:'b_onedge',n:'On edge',g:'Tense',c:'#CC7A54',d:'Braced for something bad even if you can\'t name it. Jumpy, alert, can\'t exhale.',meta:{v:'Negative',en:4,r:'Vulnerable',s:'Neutral'}},
+ {id:'b_restless',n:'Restless',g:'Charged',c:'#D9A441',d:'Itchy energy with nowhere to go. Can\'t sit still, can\'t settle on anything.',meta:{v:'Mixed',en:4,r:'Vulnerable',s:'Neutral'}},
+ {id:'b_wired',n:'Wired',g:'Charged',c:'#C98A2E',d:'Plugged into a socket. Sleep feels optional. (It isn\'t.) Everything says GO.',meta:{v:'Mixed',en:5,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_racing',n:'Racing thoughts',g:'Charged',c:'#C2963B',d:'Thoughts moving faster than you can catch them, jumping from track to track.',meta:{v:'Negative',en:5,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_impulsive',n:'Impulsive',g:'Charged',c:'#C75B8A',d:'The gap between "idea" and "doing it" has disappeared. Pause button missing.',meta:{v:'Mixed',en:4,r:'Dysregulated',s:'Neutral'}},
+ {id:'b_excited',n:'Excited',g:'Charged',c:'#D98A3D',d:'Sparkly, can\'t-wait energy. Something good is happening or on its way.',meta:{v:'Positive',en:4,r:'Regulated',s:'Neutral'}},
+ {id:'b_calm',n:'Calm',g:'Settled',c:'#5FA97C',d:'Still water. Nothing urgent, nothing loud. You can hear yourself think.',meta:{v:'Positive',en:2,r:'Regulated',s:'Neutral'}},
+ {id:'b_content',n:'Content',g:'Settled',c:'#6FA48A',d:'Quietly okay with how things are, right now. Not fireworks — warmth.',meta:{v:'Positive',en:2,r:'Regulated',s:'Neutral'}},
+ {id:'b_hopeful',n:'Hopeful',g:'Settled',c:'#7FA86B',d:'A little light at the end of the tunnel — and it doesn\'t look like a train.',meta:{v:'Positive',en:3,r:'Regulated',s:'Neutral'}},
+ {id:'b_grateful',n:'Grateful',g:'Settled',c:'#5E9E8F',d:'Warm toward what you have and who\'s around you.',meta:{v:'Positive',en:2,r:'Regulated',s:'Connection'}},
+ {id:'b_connected',n:'Connected',g:'Settled',c:'#5E9AA8',d:'Truly seen and held by someone. The opposite of alone.',meta:{v:'Positive',en:3,r:'Regulated',s:'Connection'}},
+ {id:'b_proud',n:'Proud',g:'Settled',c:'#86A05E',d:'You did the thing. Maybe the thing was just getting up today — it still counts.',meta:{v:'Positive',en:3,r:'Regulated',s:'Connection'}},
+ {id:'b_badthoughts',n:'Bad thoughts',g:'Held close',c:'#3E4C7A',d:'Thoughts that scare you or turn against you. Naming them here is brave — and a good moment to reach for support.',meta:{v:'Negative',en:3,r:'Dysregulated',s:'Neutral'}}
+];
+const CLUSTERS = ['Low & heavy','Tense','Charged','Settled'];
+const HELD_CLOSE = ['b_badthoughts'];
+const CLUSTER_COLORS = {'Low & heavy':'#5B7BD5','Tense':'#C95E52','Charged':'#D9A441','Settled':'#5FA97C','Yours':'#8E7CC3','Held close':'#3E4C7A'};
+const DEFAULT_META = ()=>({v:'Neutral',en:3,r:'Regulated',s:'Neutral'});
+const REG_PLAIN = {Regulated:'usually feels manageable',Vulnerable:'can tip into overwhelm',Dysregulated:'hard to steer',Dissociative:'distant or foggy'};
+const VAL_COLORS = {Positive:'#5FA97C',Negative:'#5B7BD5',Neutral:'#9AA0AE',Mixed:'#D9A441'};
+const B_BY_ID = Object.fromEntries(BUILTINS.map(b=>[b.id,b]));
+function customs(){ return settings.customEmotions; }
+function defById(id){
+  return B_BY_ID[id] || customs().find(e=>e.id===id) || (settings.archivedEmotions||[]).find(e=>e.id===id)
+    || {id, n:'(removed)', c:'#B7AFC9', g:'Yours', d:'', meta:null};
+}
+function tileById(id){
+  return (settings.tiles||[]).find(t=>t.id===id) || (settings.archivedTiles||[]).find(t=>t.id===id) || {id, n:'(removed)'};
+}
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* harm matcher — shared by creation intercept and import archiver (ARCH §3) */
+const HARM_WORDS = new Set(['suicide','suicidal','selfharm','selfharming','killmyself','killingmyself','endmylife','endingmylife','wanttodie','cutmyself','cuttingmyself']);
+function isHarmWord(name){ return HARM_WORDS.has(String(name||'').toLowerCase().replace(/[^a-z]/g,'')); }
+
+/* ============ helpers ============ */
+const $ = id => document.getElementById(id);
+function toast(msg, ms=2600){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'), ms); }
+function dayKey(ts){ const d=new Date(ts); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtDay(ts){ return new Date(ts).toLocaleDateString(undefined,{weekday:'long', day:'numeric', month:'short'}); }
+function fmtDM(ts){ return new Date(ts).toLocaleDateString(undefined,{day:'numeric',month:'short'}); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString(undefined,{hour:'numeric', minute:'2-digit'}); }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function tintFor(score){
+  const s = Number(score);
+  if(settings.scaleMode==='simple'){
+    if(s<=5.5){ const t=(5.5-s)/4.5; return [45+(235-45)*t, 30+14*t]; }
+    const t=(s-5.5)/4.5; return [45+(150-45)*t, 30+10*t];
+  }
+  if(s<=5.5){ const t=(5.5-s)/4.5; return [160+(235-160)*t, 30+12*t]; }
+  const t=(s-5.5)/4.5; return [160-(160-18)*t, 30+12*t];
+}
+function chipColor(score){ const [h,st]=tintFor(score); return `hsl(${h} ${st+18}% 44%)`; }
+function steadyAvg(avg, scale){ return (scale||'anchored')==='anchored' ? (avg>=4.75&&avg<=6.5) : avg>=7; }
+function sheet(id, open){ $(id).classList.toggle('open', open!==false); }
+let _confirmRes=null;
+function confirmSheet(msg, okLabel){
+  $('confirmMsg').textContent=msg;
+  $('confirmOk').textContent=okLabel||'Remove';
+  sheet('confirmBg');
+  return new Promise(res=>{ _confirmRes=res; });
+}
+function applyTheme(){
+  document.body.classList.toggle('dark', settings.theme==='dark');
+  $('themePill').classList.toggle('dark', settings.theme==='dark');
+  $('themeIcon').textContent = settings.theme==='dark'?'🌙':'☀️';
+  const m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.content = settings.theme==='dark' ? '#16141B' : '#F7F6FA';
+}
+function setTrackGradient(){
+  const stops=[];
+  for(let s=1;s<=10;s++) stops.push(chipColor(s)+' '+(((s-1)/9)*100).toFixed(0)+'%');
+  document.documentElement.style.setProperty('--trackgrad','linear-gradient(90deg,'+stops.join(',')+')');
+}
+function initSheetDrag(){
+  document.querySelectorAll('.sheet').forEach(sh=>{
+    const handle=sh.querySelector('.handle'); if(!handle) return;
+    let startY=null;
+    const bg=sh.parentElement;
+    handle.style.touchAction='none';
+    handle.addEventListener('pointerdown', e=>{ startY=e.clientY; handle.setPointerCapture(e.pointerId); });
+    handle.addEventListener('pointermove', e=>{
+      if(startY===null) return;
+      const dy=Math.max(0, e.clientY-startY);
+      sh.style.transform='translateY('+dy+'px)';
+    });
+    const end=e=>{
+      if(startY===null) return;
+      const dy=e.clientY-startY; startY=null;
+      sh.style.transform='';
+      if(dy>80){ bg.classList.remove('open'); if(bg.id==='confirmBg'&&_confirmRes){ _confirmRes(false); _confirmRes=null; } }
+    };
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  });
+}
+
+const RESOURCE_SETS = {
+  IN:[{name:'Tele-MANAS (24×7, Govt. of India)',tel:'14416'},{name:'iCall',tel:'9152987821'},
+      {name:'Vandrevala Foundation (24×7)',tel:'9999666555'},{name:'AASRA (24×7)',tel:'9820466726'},
+      {name:'KIRAN',tel:'18005990019',show:'1800-599-0019'}],
+  US:[{name:'Suicide & Crisis Lifeline (call or text)',tel:'988'},{name:'Crisis Text Line — text HOME to 741741',link:'https://www.crisistextline.org'}],
+  UK:[{name:'Samaritans (24×7, UK & Ireland)',tel:'116123',show:'116 123'},{name:'Shout — text SHOUT to 85258',link:'https://giveusashout.org'}],
+  AU:[{name:'Lifeline (24×7)',tel:'131114',show:'13 11 14'},{name:'Beyond Blue',tel:'1300224636',show:'1300 22 4636'}],
+  OTHER:[]
+};
+const FIND_HELPLINE = {name:'Find a helpline anywhere in the world', link:'https://findahelpline.com'};
+function currentResources(){ return (RESOURCE_SETS[settings.region]||RESOURCE_SETS.OTHER).concat([FIND_HELPLINE]); }
+
+const ANCHORED_WORDS = {1:'Severe low',2:'Very low',3:'Low',4:'Slipping',5:'Steady',6:'Steady',7:'Lifted',8:'High energy',9:'Very high',10:'Extreme high'};
+const SIMPLE_WORDS = {1:'Awful',2:'Very rough',3:'Rough',4:'Below okay',5:'Okay',6:'Alright',7:'Good',8:'Very good',9:'Great',10:'Wonderful'};
+
+/* ============ dial ============ */
+function renderDial(){
+  setTrackGradient();
+  const v = Number($('dial').value);
+  $('dialNum').textContent = v;
+  $('dialWord').textContent = (settings.scaleMode==='anchored'?ANCHORED_WORDS:SIMPLE_WORDS)[v];
+  const [h,s] = tintFor(v);
+  document.documentElement.style.setProperty('--tint', h.toFixed(0));
+  document.documentElement.style.setProperty('--tintsat', s.toFixed(0)+'%');
+  if(settings.scaleMode==='anchored'){
+    $('endLow').textContent='1 · severe low'; $('endHigh').textContent='10 · very high energy';
+    $('dialSub').textContent = v>=9 ? 'Very high energy can be worth watching too.' : (v<=2 ? 'Thank you for being honest with yourself.' : '');
+  } else {
+    $('endLow').textContent='1 · awful'; $('endHigh').textContent='10 · great';
+    $('dialSub').textContent = v<=2 ? 'Thank you for being honest with yourself.' : '';
+  }
+}
+
+/* ============ emotions ============ */
+function orderedClusterNames(){
+  const v = Number($('dial').value);
+  if(settings.scaleMode==='anchored'){
+    if(v<=4) return ['Low & heavy','Tense','Charged','Settled'];
+    if(v<=6) return ['Settled','Low & heavy','Tense','Charged'];
+    if(v<=8) return ['Charged','Settled','Tense','Low & heavy'];
+    return ['Charged','Tense','Settled','Low & heavy'];
+  }
+  if(v<=4) return ['Low & heavy','Tense','Settled','Charged'];
+  if(v<=6) return ['Settled','Tense','Low & heavy','Charged'];
+  return ['Settled','Charged','Tense','Low & heavy'];
+}
+function emotionChip(def, chips){
+  const b = document.createElement('button');
+  b.className = 'chip'+(selectedEmotions.has(def.id)?' sel':'');
+  b.innerHTML = `<i class="dot" style="background:${def.c}"></i>${esc(def.n)}`;
+  const paint = ()=>{ const on=b.classList.contains('sel'); b.style.background=on?def.c:''; b.style.borderColor=on?def.c:''; };
+  paint();
+  b.style.setProperty('--glow', def.c+'66');
+  b.onclick = ()=>{
+    if(learnMode){ showWord(def.id); return; }
+    selectedEmotions.has(def.id)?selectedEmotions.delete(def.id):selectedEmotions.add(def.id);
+    b.classList.toggle('sel'); paint();
+  };
+  chips.appendChild(b);
+}
+function renderEmotions(){
+  const wrap = $('emoGroups'); wrap.innerHTML='';
+  wrap.classList.toggle('learn', learnMode);
+  const hidden = new Set(settings.hiddenEmotions||[]);
+  const groups = orderedClusterNames().map(cl=>({
+    group:cl,
+    defs:BUILTINS.filter(b=>b.g===cl&&!hidden.has(b.id)).concat(customs().filter(c=>c.g===cl&&!hidden.has(c.id)))
+  }));
+  const yours = customs().filter(c=>(!c.g||c.g==='Yours')&&!hidden.has(c.id));
+  if(yours.length) groups.push({group:'Yours', defs:yours});
+  groups.forEach(g=>{
+    if(!g.defs.length) return;
+    const div = document.createElement('div'); div.className='emo-group';
+    div.innerHTML = `<h4>${esc(g.group)}</h4>`;
+    const chips = document.createElement('div'); chips.className='chips';
+    g.defs.forEach(d=>emotionChip(d, chips));
+    div.appendChild(chips); wrap.appendChild(div);
+  });
+  // Held close — bidirectional disclosure, auto-closed on launch & after save (§0.9)
+  const held = document.createElement('div'); held.className='emo-group';
+  const hb = document.createElement('button');
+  hb.className='textrow'; hb.textContent = heldOpen ? 'Held close ▾' : 'Held close ▸';
+  hb.onclick = ()=>{ heldOpen = !heldOpen; renderEmotions(); };
+  held.appendChild(hb);
+  if(heldOpen){
+    const chips = document.createElement('div'); chips.className='chips';
+    HELD_CLOSE.forEach(id=>emotionChip(defById(id), chips));
+    held.appendChild(chips);
+    const hint = document.createElement('p'); hint.className='cap'; hint.style.marginTop='8px';
+    hint.textContent = 'Kept tucked away on purpose. Tagging it gently opens support options.';
+    held.appendChild(hint);
+  }
+  wrap.appendChild(held);
+  const addWrap = document.createElement('div'); addWrap.className='chips';
+  addWrap.innerHTML = `<button class="chip ghost" id="emoAddBtn">+ add your own word</button>`;
+  wrap.appendChild(addWrap);
+  $('emoAddBtn').onclick = ()=>openEmoSheet(null);
+  renderTiles();
+}
+
+/* ============ context tiles ============ */
+const STARTER_TILES = ['working','resting','with people','alone','scrolling','eating','commuting','chores','studying','outside'];
+function visibleTiles(){ const hid=new Set(settings.hiddenTiles||[]); return (settings.tiles||[]).filter(t=>!hid.has(t.id)); }
+function tileUsage(){
+  const u={};
+  entries.forEach(e=> (e.activities||[]).forEach(id=> u[id]=(u[id]||0)+1));
+  return u;
+}
+function renderTiles(){
+  const wrap = $('tileChips'); wrap.innerHTML='';
+  const tiles = visibleTiles();
+  const use = tileUsage();
+  const top3 = tiles.filter(t=>!selectedTiles.has(t.id))
+    .sort((a,b)=>(use[b.id]||0)-(use[a.id]||0)).slice(0,3);
+  const show = tiles.filter(t=>selectedTiles.has(t.id)).concat(top3);
+  show.forEach(t=>{
+    const b = document.createElement('button');
+    b.className = 'chip tile'+(selectedTiles.has(t.id)?' sel':'');
+    b.textContent = (t.emoji?t.emoji+' ':'')+t.n;
+    b.onclick = ()=>{ selectedTiles.has(t.id)?selectedTiles.delete(t.id):selectedTiles.add(t.id); renderTiles(); };
+    wrap.appendChild(b);
+  });
+  const add = document.createElement('button');
+  add.className='chip ghost';
+  add.textContent = tiles.length ? '+ add' : '+ add what you\'re doing';
+  add.onclick = openTilePicker;
+  wrap.appendChild(add);
+}
+let tileEditMode = false;
+function openTilePicker(){
+  tileEditMode=false;
+  renderTilePicker();
+  $('tileNew').value=''; $('tileEmoji').value='';
+  sheet('tilePickBg');
+}
+function renderTilePicker(){
+  const have = new Set((settings.tiles||[]).map(t=>t.n.toLowerCase()));
+  const mine = visibleTiles().map(tl=>{
+    const on = selectedTiles.has(tl.id);
+    return `<button class="chip tile${on?' sel':''}" data-mine="${tl.id}">${tl.emoji?tl.emoji+' ':''}${esc(tl.n)}${tileEditMode?' ✎':''}</button>`;
+  }).join('');
+  const starters = STARTER_TILES.filter(s=>!have.has(s))
+    .map(s=>`<button class="chip ghost" data-st="${esc(s)}">+ ${esc(s)}</button>`).join('');
+  $('starterChips').innerHTML =
+    `<div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:4px">
+       <span class="cap">Your activities — tap to select for this entry</span>
+       <button class="pillbtn" id="tileEditToggle">${tileEditMode?'✓ done editing':'✎ edit'}</button></div>`
+    + (mine||'<p class="cap">Nothing yet — pick a suggestion or write your own.</p>')
+    + (starters?`<span class="cap" style="width:100%;margin-top:10px">Suggestions</span>${starters}`:'');
+  $('tileEditToggle').onclick = ()=>{ tileEditMode=!tileEditMode; renderTilePicker(); };
+  $('starterChips').querySelectorAll('[data-mine]').forEach(b=> b.onclick=()=>{
+    const id=b.dataset.mine;
+    if(tileEditMode){ openTileEdit(id); return; }
+    selectedTiles.has(id)?selectedTiles.delete(id):selectedTiles.add(id);
+    renderTilePicker(); renderTiles();
+  });
+  $('starterChips').querySelectorAll('[data-st]').forEach(b=> b.onclick=()=>{
+    const t={id:uid('t'), n:b.dataset.st}; settings.tiles.push(t); selectedTiles.add(t.id);
+    kvSet('settings',settings); renderTilePicker(); renderTiles(); renderPool();
+  });
+}
+
+/* ============ emotion sheet (create/edit) + harm intercept ============ */
+const SWATCH_PALETTE = ['#8E7CC3','#5B7BD5','#8E9AB5','#A98BA5','#C75B8A','#C08497','#D96C6C','#CC7A54','#D9A441','#7FA86B','#5FA97C','#5E9AA8'];
+let pickedColor = '#8E7CC3';
+function renderSwatches(){
+  $('swatches').innerHTML = SWATCH_PALETTE.map(c=>`<button class="swatch${c===pickedColor?' sel':''}" style="background:${c}" data-c="${c}" aria-label="color ${c}"></button>`).join('');
+  $('swatches').querySelectorAll('.swatch').forEach(s=> s.onclick=()=>{ pickedColor=s.dataset.c; $('emoSpectrum').value=s.dataset.c; renderSwatches(); });
+}
+function openEmoSheet(id){
+  editingEmoId = id;
+  const def = id ? customs().find(e=>e.id===id) : null;
+  $('emoModalTitle').textContent = def ? 'Edit your emotion' : 'Add your own emotion';
+  $('emoNew').value = def?def.n:'';
+  $('emoGroupSel').value = def?(def.g||'Yours'):'Yours';
+  pickedColor = def?def.c:'#8E7CC3'; $('emoSpectrum').value = pickedColor;
+  const m = def?def.meta:DEFAULT_META();
+  $('metaV').value=m.v; $('metaE').value=String(m.en); $('metaR').value=m.r; $('metaS').value=m.s;
+  $('metaWrap').open = !!(def&&def.metaSet);
+  $('emoDelete').classList.toggle('hidden', !def);
+  renderSwatches();
+  sheet('emoModalBg');
+}
+function metaTouched(base){
+  return $('metaV').value!==base.v || $('metaE').value!==String(base.en) || $('metaR').value!==base.r || $('metaS').value!==base.s;
+}
+function wireEmoSheet(){
+  $('emoSpectrum').oninput = ()=>{ pickedColor=$('emoSpectrum').value; renderSwatches(); };
+  $('emoCancel').onclick = ()=>sheet('emoModalBg', false);
+  $('emoSave').onclick = ()=>{
+    const w = $('emoNew').value.trim();
+    if(!w) return;
+    if(isHarmWord(w)){ sheet('harmBg'); return; }   // intercept — word is not added (SPEC §3.7)
+    const clash = BUILTINS.some(b=>b.n.toLowerCase()===w.toLowerCase())
+      || customs().some(e=>e.n.toLowerCase()===w.toLowerCase()&&e.id!==editingEmoId);
+    if(clash){ toast('That one\'s already on the list.'); return; }
+    const meta = {v:$('metaV').value, en:Number($('metaE').value), r:$('metaR').value, s:$('metaS').value};
+    if(editingEmoId){
+      const def = customs().find(e=>e.id===editingEmoId);
+      const wasTouched = def.metaSet || metaTouched(def.meta);
+      Object.assign(def, {n:w, c:pickedColor, g:$('emoGroupSel').value, meta, metaSet:wasTouched});
+    } else {
+      const touched = metaTouched(DEFAULT_META());
+      const def = {id:uid('c'), n:w, c:pickedColor, g:$('emoGroupSel').value, meta, metaSet:touched};
+      settings.customEmotions.push(def);
+      selectedEmotions.add(def.id);
+    }
+    kvSet('settings',settings);
+    renderEmotions(); renderPool(); renderTimeline(); renderCharts();
+    sheet('emoModalBg', false);
+  };
+  $('emoDelete').onclick = async ()=>{
+    if(!editingEmoId) return;
+    if(!(await confirmSheet('Remove this emotion from your list? Past entries will still show it.'))) return;
+    const def = customs().find(e=>e.id===editingEmoId);
+    settings.archivedEmotions = settings.archivedEmotions||[];
+    settings.archivedEmotions.push(def);
+    settings.customEmotions = customs().filter(e=>e.id!==editingEmoId);
+    selectedEmotions.delete(editingEmoId);
+    kvSet('settings',settings);
+    renderEmotions(); renderPool();
+    sheet('emoModalBg', false);
+  };
+  $('harmUse').onclick = ()=>{
+    heldOpen = true; selectedEmotions.add('b_badthoughts');
+    sheet('harmBg', false); sheet('emoModalBg', false);
+    renderEmotions();
+  };
+  $('harmLines').onclick = ()=>{ sheet('harmBg', false); sheet('emoModalBg', false); switchView('care'); };
+}
+
+/* ============ tile sheets ============ */
+function wireTileSheets(){
+  $('tilePickCancel').onclick = ()=>sheet('tilePickBg', false);
+  $('tilePickSave').onclick = ()=>{
+    const typed = $('tileNew').value.trim();
+    const emoji = $('tileEmoji').value.trim().slice(0,4);
+    if(typed){
+      if((settings.tiles||[]).some(t=>t.n.toLowerCase()===typed.toLowerCase())) toast('That tile already exists.');
+      else { const t={id:uid('t'), n:typed, emoji:emoji||undefined}; settings.tiles.push(t); selectedTiles.add(t.id); }
+    }
+    kvSet('settings',settings); renderTiles(); renderPool();
+    sheet('tilePickBg', false);
+  };
+  $('tileEditCancel').onclick = ()=>sheet('tileEditBg', false);
+  $('tileEditSave').onclick = ()=>{
+    const t = (settings.tiles||[]).find(x=>x.id===editingTileId); if(!t) return;
+    const n = $('tileEditName').value.trim(); if(!n) return;
+    t.n=n; t.emoji=$('tileEditEmoji').value.trim().slice(0,4)||undefined;
+    kvSet('settings',settings); renderTiles(); renderPool(); renderTimeline();
+    if($('tilePickBg').classList.contains('open')) renderTilePicker();
+    sheet('tileEditBg', false);
+  };
+  $('tileEditDelete').onclick = async ()=>{
+    if(!(await confirmSheet('Remove this tile? Past entries will still show it.'))) return;
+    const t=(settings.tiles||[]).find(x=>x.id===editingTileId);
+    settings.archivedTiles=settings.archivedTiles||[]; settings.archivedTiles.push(t);
+    settings.tiles=settings.tiles.filter(x=>x.id!==editingTileId);
+    selectedTiles.delete(editingTileId);
+    kvSet('settings',settings); renderTiles(); renderPool();
+    if($('tilePickBg').classList.contains('open')) renderTilePicker();
+    sheet('tileEditBg', false);
+  };
+}
+function openTileEdit(id){
+  editingTileId=id;
+  const t=(settings.tiles||[]).find(x=>x.id===id); if(!t) return;
+  $('tileEditName').value=t.n; $('tileEditEmoji').value=t.emoji||'';
+  sheet('tileEditBg');
+}
+
+/* ============ word popup ============ */
+function dimChips(meta){
+  const dots=[1,2,3,4,5].map(i=>`<i class="edot${i<=meta.en?' on':''}"></i>`).join('');
+  let html=`<div class="dim-row"><span class="dim-pill" style="background:${VAL_COLORS[meta.v]}22;color:${VAL_COLORS[meta.v]};border:1.5px solid ${VAL_COLORS[meta.v]}55">${meta.v}</span>
+    <span class="dim-energy">${dots}<em>energy</em></span></div>
+  <div class="dim-row"><span class="dim-badge">${REG_PLAIN[meta.r]||meta.r}<em>${meta.r.toLowerCase()}</em></span>`;
+  if(meta.s!=='Neutral') html+=`<span class="dim-badge">${meta.s==='Connection'?'🤝 pulls toward people':'🌫 pulls away from people'}</span>`;
+  return html+`</div>`;
+}
+function showWord(id){
+  const def = defById(id);
+  $('wordDot').style.background=def.c;
+  $('wordTitle').textContent=def.n;
+  $('wordDesc').textContent=def.d || 'Your word, your meaning. You defined this one.';
+  const isCustom = !B_BY_ID[id];
+  let extra='';
+  if(isCustom && def.meta && !def.metaSet){
+    extra=`<p class="cap" style="margin-top:12px">You haven't described this one yet — want to?</p>
+      <button class="btn-quiet" id="wordEdit" style="margin-top:10px">Describe it</button>`;
+  } else if(def.meta){
+    extra=dimChips(def.meta);
+    if(isCustom) extra+=`<button class="btn-quiet" id="wordEdit" style="margin-top:14px">Edit</button>`;
+  }
+  $('wordDims').innerHTML=extra;
+  const we=$('wordEdit');
+  if(we) we.onclick=()=>{ sheet('wordBg',false); openEmoSheet(id); };
+  sheet('wordBg');
+}
+
+/* ============ photos ============ */
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=1280; let {width:w,height:h}=img;
+      if(Math.max(w,h)>max){ const r=max/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(b=>b?res(b):rej(new Error('compress failed')),'image/jpeg',0.72);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror=rej;
+    img.src=URL.createObjectURL(file);
+  });
+}
+function renderPendingPhotos(){
+  const strip=$('photoStrip');
+  strip.querySelectorAll('img').forEach(n=>n.remove());
+  pendingPhotos.forEach((b,i)=>{
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(b); img.alt='attached photo'; img.style.cursor='pointer';
+    img.onclick=async ()=>{ if(await confirmSheet('Remove this photo?')){ pendingPhotos.splice(i,1); renderPendingPhotos(); } };
+    strip.appendChild(img);
+  });
+}
+
+/* ============ saving (snapshot rule) ============ */
+let editingEntryId = null;
+function beginEditEntry(id){
+  const e = entries.find(x=>x.id===id); if(!e||e.type!=='mood') return;
+  editingEntryId = id;
+  $('dial').value = e.score; renderDial();
+  selectedEmotions = new Set(e.emotions||[]);
+  selectedTiles = new Set(e.activities||[]);
+  heldOpen = (e.emotions||[]).some(x=>HELD_CLOSE.includes(x));
+  $('note').value = e.note||'';
+  pendingPhotos = []; renderPendingPhotos();
+  $('editBar').classList.remove('hidden');
+  $('editBar').querySelector('span').textContent = 'Editing your entry from '+fmtDM(e.ts)+', '+fmtTime(e.ts);
+  renderEmotions();
+  switchView('today');
+}
+function endEdit(){
+  editingEntryId = null;
+  $('editBar').classList.add('hidden');
+  selectedEmotions.clear(); selectedTiles.clear(); $('note').value=''; heldOpen=false;
+  renderEmotions();
+}
+async function saveEntry(){
+  const score = Number($('dial').value);
+  const emoIds = [...selectedEmotions];
+  const snap = {};
+  emoIds.forEach(id=>{ const d=defById(id); if(d.meta) snap[id]={...d.meta}; });
+  if(editingEntryId){
+    const e = entries.find(x=>x.id===editingEntryId);
+    if(e){
+      e.score=score; e.emotions=emoIds; e.activities=[...selectedTiles];
+      e.snap=snap; e.note=$('note').value.trim(); e.edited=Date.now();
+      for(const b of pendingPhotos){ const id=uid('p'); await putPhoto({id, blob:b}); (e.photoIds=e.photoIds||[]).push(id); }
+      await putEntry(e);
+    }
+    endEdit(); pendingPhotos=[]; renderPendingPhotos();
+    const btn=$('saveBtn'); btn.textContent='Updated 💜'; setTimeout(()=>btn.textContent='Save entry', 1300);
+    toast('Updated. Your record, your words. 💜');
+    renderTimeline(); renderCharts(); renderCalendar();
+    return;
+  }
+  const photoIds = [];
+  for(const b of pendingPhotos){ const id=uid('p'); await putPhoto({id, blob:b}); photoIds.push(id); }
+  const e = { id:uid('e'), ts:Date.now(), type:'mood', score, scale:settings.scaleMode, author:'self',
+              emotions:emoIds, activities:[...selectedTiles], snap,
+              note:$('note').value.trim(), photoIds };
+  await putEntry(e); entries.unshift(e);
+  selectedEmotions.clear(); selectedTiles.clear(); pendingPhotos=[]; $('note').value='';
+  heldOpen = false;                       // Held close re-collapses after save (§0.9)
+  $('crisisCard').classList.add('hidden');
+  renderEmotions(); renderPendingPhotos();
+  const btn=$('saveBtn'); btn.textContent='Saved 💜'; setTimeout(()=>btn.textContent='Save entry', 1300);
+  const crisis = score<=2 || emoIds.includes('b_badthoughts');
+  if(crisis){ renderCrisisLines(); $('crisisCard').classList.remove('hidden'); $('crisisCard').scrollIntoView({behavior:'smooth'}); }
+  else if(settings.scaleMode==='anchored'&&score>=9){ toast('Saved. High-energy stretches are worth mentioning to your doctor. 💜', 4200); }
+  else toast('Saved. Thank you for checking in. 💜');
+  renderTimeline(); renderCharts(); renderCalendar(); renderMedCard();
+}
+async function saveSkip(){
+  const e={ id:uid('e'), ts:Date.now(), type:'skip', author:'self' };
+  await putEntry(e); entries.unshift(e);
+  toast('Noted, gently. Rest easy — no details recorded.');
+  renderTimeline(); renderCharts(); renderCalendar();
+}
+
+/* ============ crisis / resources ============ */
+function resourceRows(){
+  return currentResources().map(r=>{
+    const a = r.link ? `<a href="${r.link}" target="_blank" rel="noopener">Open</a>` : `<a href="tel:${r.tel}">${r.show||r.tel}</a>`;
+    return `<div class="res-line"><span>${esc(r.name)}</span>${a}</div>`;
+  }).join('');
+}
+function renderCrisisLines(){ $('crisisLines').innerHTML = resourceRows(); }
+function renderResList(){ $('resList').innerHTML = resourceRows(); }
+
+/* ============ log (single-day filter per calendar tap) ============ */
+async function renderTimeline(){
+  const wrap = $('timeline');
+  const list = logFilterDay
+    ? entries.filter(e=> e.ts>=logFilterDay && e.ts<logFilterDay+86400000)
+    : entries;
+  const fb = $('logFilterBar');
+  if(logFilterDay){
+    fb.classList.remove('hidden');
+    fb.querySelector('span').textContent = 'Showing '+fmtDM(logFilterDay);
+  } else fb.classList.add('hidden');
+  renderLogCal();
+  if(!list.length){
+    wrap.innerHTML = logFilterDay
+      ? `<p class="body2" style="padding:24px 0;text-align:center">Nothing was logged that day — and that's okay too.</p>`
+      : `<p class="body2" style="padding:24px 0;text-align:center">Nothing here yet. Your first entry is one tap away — and skipping counts too.</p>`;
+    return;
+  }
+  let html='', lastDay='';
+  list.forEach(e=>{
+    const dk=dayKey(e.ts);
+    if(dk!==lastDay){ html+=`<div class="day-head">${fmtDay(e.ts)}</div>`; lastDay=dk; }
+    const actBtns = e.type==='mood'
+      ? `<span style="display:flex;gap:6px"><button class="pillbtn" data-editentry="${e.id}">edit</button><button class="pillbtn" data-del="${e.id}">remove</button></span>`
+      : `<button class="pillbtn" data-del="${e.id}">remove</button>`;
+    const removeBtn = actBtns;
+    if(e.type==='skip'){
+      html+=`<div class="entry"><div class="squircle skip num">—</div><div class="entry-body">
+        <div class="entry-top"><span class="entry-when">${fmtTime(e.ts)} · Chose not to log</span>${removeBtn}</div>
+      </div></div>`;
+    } else {
+      const emos=(e.emotions||[]).map(id=>{ const d=defById(id);
+        return `<span style="white-space:nowrap"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.c};margin-right:5px"></i>${esc(d.n)}</span>`; }).join('  ');
+      const acts=(e.activities||[]).map(id=>esc(tileById(id).n)).join(' · ');
+      const photos=(e.photoIds&&e.photoIds.length)?`<div class="entry-photos" data-photos="${e.photoIds.join(',')}"></div>`:'';
+      html+=`<div class="entry"><div class="squircle num" style="background:${chipColor(e.score)}">${e.score}</div><div class="entry-body">
+        <div class="entry-top"><span class="entry-when">${fmtTime(e.ts)}${e.edited?' · edited':''}</span>${removeBtn}</div>
+        ${emos?`<div class="entry-emos">${emos}</div>`:''}
+        ${acts?`<div class="entry-acts">⌂ ${acts}</div>`:''}
+        ${e.note?`<div class="entry-note clamp">${esc(e.note)}</div>`:''}
+        ${photos}</div></div>`;
+    }
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-editentry]').forEach(b=> b.onclick = ()=> beginEditEntry(b.dataset.editentry));
+  wrap.querySelectorAll('.entry-note.clamp').forEach(n=>{
+    requestAnimationFrame(()=>{
+      if(n.scrollHeight > n.clientHeight + 2){
+        const tg=document.createElement('button');
+        tg.className='pillbtn'; tg.style.marginTop='6px'; tg.textContent='see more';
+        tg.onclick=()=>{ const c=n.classList.toggle('clamp'); tg.textContent=c?'see more':'see less'; };
+        n.after(tg);
+      }
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
+    if(!(await confirmSheet('Remove this entry? This can\'t be undone.'))) return;
+    await delEntry(b.dataset.del);
+    entries = entries.filter(x=>x.id!==b.dataset.del);
+    renderTimeline(); renderCharts(); renderCalendar();
+  });
+  for(const holder of wrap.querySelectorAll('[data-photos]')){
+    for(const pid of holder.dataset.photos.split(',')){
+      const p = await getPhoto(pid);
+      if(p&&p.blob){ const img=document.createElement('img'); img.src=URL.createObjectURL(p.blob); img.alt='photo'; holder.appendChild(img); }
+    }
+  }
+}
+
+/* ============ calendar ============ */
+let calMonth=null, calExpanded=false, calWeekOffset=0;
+function sameMonth(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth(); }
+function dayCell(cd, byDay, start, startKey, todayKey, now){
+  const k=dayKey(cd.getTime());
+  const rec=byDay[k];
+  let cls='cal-day', style='', title='';
+  if(k===startKey) cls+=' start';
+  if(k===todayKey) cls+=' today';
+  if(cd<start&&k!==startKey){ cls+=' pre'; title='Before your journey began'; }
+  else if(cd>now){ cls+=' future'; }
+  else if(rec&&rec.scores.length){
+    cls+=' logged';
+    const avg=rec.scores.reduce((a,b)=>a+b,0)/rec.scores.length;
+    style=`background:${chipColor(avg)}`;
+    title=`Average ${avg.toFixed(1)}`;
+  }
+  else if(rec&&rec.skip){ cls+=' skipday'; title='Chose not to log'; }
+  else { cls+=' noentry'; title='No entry'; }
+  if(k===startKey) title='Day one — where your journey began ✦';
+  const clickable = !(cd>now);
+  return `<div class="${cls}" ${clickable?`data-k="${cd.getTime()}" role="button" tabindex="0"`:''} style="${style}${clickable?';cursor:pointer':''}" title="${title}">${cd.getDate()}</div>`;
+}
+function renderCalendar(){
+  const now=new Date();
+  if(!calMonth) calMonth=new Date(now.getFullYear(),now.getMonth(),1);
+  const byDay={};
+  entries.forEach(e=>{
+    const k=dayKey(e.ts);
+    byDay[k]=byDay[k]||{scores:[],skip:false};
+    if(e.type==='skip') byDay[k].skip=true; else byDay[k].scores.push(e.score);
+  });
+  const start = settings.journeyStart?new Date(settings.journeyStart):now;
+  start.setHours(0,0,0,0);
+  const startKey=dayKey(start.getTime()), todayKey=dayKey(now.getTime());
+  const dows=['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  if(!calExpanded){
+    $('calNext').disabled = calWeekOffset>=0;
+    $('calToggle').textContent='Month ▾';
+    const sun=new Date(now); sun.setHours(0,0,0,0);
+    sun.setDate(sun.getDate()-sun.getDay()+calWeekOffset*7);
+    const sat=new Date(sun); sat.setDate(sun.getDate()+6);
+    $('calTitle').textContent = calWeekOffset===0 ? 'This week' : fmtDM(sun)+' – '+fmtDM(sat);
+    let html=dows;
+    for(let i=0;i<7;i++){ const cd=new Date(sun); cd.setDate(sun.getDate()+i); html+=dayCell(cd,byDay,start,startKey,todayKey,now); }
+    $('calGrid').innerHTML=html;
+    bindDayClicks();
+    return;
+  }
+  const thisMonth=new Date(now.getFullYear(),now.getMonth(),1);
+  $('calNext').disabled = sameMonth(calMonth,thisMonth);
+  $('calTitle').textContent = calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  $('calToggle').textContent='Week ▾';
+  let html=dows;
+  const firstDow=calMonth.getDay();
+  const dim=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,0).getDate();
+  for(let i=0;i<firstDow;i++) html+=`<div class="cal-day blank"></div>`;
+  for(let d=1;d<=dim;d++) html+=dayCell(new Date(calMonth.getFullYear(),calMonth.getMonth(),d),byDay,start,startKey,todayKey,now);
+  $('calGrid').innerHTML=html;
+  bindDayClicks();
+}
+function bindDayClicks(){
+  $('calGrid').querySelectorAll('[data-k]').forEach(c=> c.onclick=()=>{
+    logFilterDay = Number(c.dataset.k);   // that specific day's log
+    switchView('timeline');
+  });
+}
+
+/* --- log tab's own calendar: sticky week, month as overlay --- */
+let lcWeekOffset=0, lcMonth=null;
+function lcData(){
+  const byDay={};
+  entries.forEach(e=>{ const k=dayKey(e.ts); byDay[k]=byDay[k]||{scores:[],skip:false};
+    if(e.type==='skip') byDay[k].skip=true; else byDay[k].scores.push(e.score); });
+  const now=new Date();
+  const start=settings.journeyStart?new Date(settings.journeyStart):now; start.setHours(0,0,0,0);
+  return {byDay, start, startKey:dayKey(start.getTime()), todayKey:dayKey(now.getTime()), now};
+}
+function lcMark(html){
+  if(!logFilterDay) return html;
+  const k=new Date(logFilterDay);
+  return html.replace(`data-k="${logFilterDay}"`, `data-k="${logFilterDay}" data-sel="1"`);
+}
+function renderLogCal(){
+  const {byDay,start,startKey,todayKey,now}=lcData();
+  const dows=['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  $('lcNext').disabled = lcWeekOffset>=0;
+  const sun=new Date(now); sun.setHours(0,0,0,0);
+  sun.setDate(sun.getDate()-sun.getDay()+lcWeekOffset*7);
+  const sat=new Date(sun); sat.setDate(sun.getDate()+6);
+  $('lcTitle').textContent = lcWeekOffset===0?'This week':fmtDM(sun)+' – '+fmtDM(sat);
+  let html=dows;
+  for(let i=0;i<7;i++){ const cd=new Date(sun); cd.setDate(sun.getDate()+i); html+=dayCell(cd,byDay,start,startKey,todayKey,now); }
+  $('lcGrid').innerHTML=lcMark(html);
+  markSel($('lcGrid'));
+  bindLcClicks($('lcGrid'));
+  if(!$('lcMonthPanel').classList.contains('hidden')) renderLcMonth();
+}
+function markSel(grid){
+  grid.querySelectorAll('[data-sel]').forEach(c=>c.classList.add('selday'));
+}
+function bindLcClicks(grid){
+  grid.querySelectorAll('[data-k]').forEach(c=> c.onclick=()=>{
+    const k=Number(c.dataset.k);
+    logFilterDay = (logFilterDay===k)?null:k;
+    $('lcMonthPanel').classList.add('hidden');
+    renderTimeline();
+  });
+}
+function renderLcMonth(){
+  const {byDay,start,startKey,todayKey,now}=lcData();
+  if(!lcMonth) lcMonth=new Date(now.getFullYear(),now.getMonth(),1);
+  const thisMonth=new Date(now.getFullYear(),now.getMonth(),1);
+  $('lcmNext').disabled = sameMonth(lcMonth,thisMonth);
+  $('lcmTitle').textContent = lcMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const dows=['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  let html=dows;
+  const firstDow=lcMonth.getDay();
+  const dim=new Date(lcMonth.getFullYear(),lcMonth.getMonth()+1,0).getDate();
+  for(let i=0;i<firstDow;i++) html+=`<div class="cal-day blank"></div>`;
+  for(let d=1;d<=dim;d++) html+=dayCell(new Date(lcMonth.getFullYear(),lcMonth.getMonth(),d),byDay,start,startKey,todayKey,now);
+  $('lcmGrid').innerHTML=lcMark(html);
+  markSel($('lcmGrid'));
+  bindLcClicks($('lcmGrid'));
+}
+</script>
+<script>
+/* ============ charts ============ */
+function entryCluster(e){
+  const f={};
+  (e.emotions||[]).forEach(id=>{ const g=defById(id).g||'Yours';
+    const cl = CLUSTERS.includes(g)?g:(HELD_CLOSE.includes(id)?'Held close':g);
+    f[cl]=(f[cl]||0)+1; });
+  const top=Object.entries(f).sort((a,b)=>b[1]-a[1])[0];
+  return top?top[0]:null;
+}
+function dayWindow(n){
+  const days=[]; const today=new Date(); today.setHours(0,0,0,0);
+  for(let i=n-1;i>=0;i--){ const d=new Date(today); d.setDate(d.getDate()-i);
+    days.push({key:dayKey(d.getTime()), date:d, list:[], scores:[], skipped:false}); }
+  const byKey=Object.fromEntries(days.map(d=>[d.key,d]));
+  entries.forEach(e=>{ const d=byKey[dayKey(e.ts)]; if(!d) return;
+    if(e.type==='skip') d.skipped=true; else { d.scores.push(e.score); d.list.push(e); } });
+  return {days, byKey};
+}
+function dayEnergy(d){
+  let sum=0,n=0;
+  d.list.forEach(e=>{ if(e.snap) Object.values(e.snap).forEach(m=>{ sum+=m.en; n++; }); });
+  return n?sum/n:null;
+}
+const LEGEND_HTML = CLUSTERS.map(c=>`<span><i style="background:${CLUSTER_COLORS[c]}"></i>${c}</span>`).join('')
+  + `<span><i style="background:#B7AFC9"></i>no tags</span>`
+  + `<span><i style="background:#fff;box-shadow:inset 0 0 0 1.5px var(--yours)"></i>chose not to log</span>`
+  + `<span><i class="line" style="background:#C98A2E"></i>energy</span>`;
+
+let period='week', perOffset=0;
+function periodRange(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  if(period==='day'){
+    const d=new Date(now); d.setDate(d.getDate()+perOffset);
+    return {start:d, end:new Date(d),
+      label:d.toLocaleDateString(undefined,{day:'2-digit',month:'long',year:'numeric',weekday:'long'})};
+  }
+  if(period==='week'){
+    const s=new Date(now); s.setDate(s.getDate()-s.getDay()+perOffset*7);
+    const e=new Date(s); e.setDate(s.getDate()+6);
+    const f=d=>d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'});
+    return {start:s, end:e, label:f(s)+' – '+f(e)};
+  }
+  if(period==='month'){
+    const s=new Date(now.getFullYear(), now.getMonth()+perOffset, 1);
+    const e=new Date(s.getFullYear(), s.getMonth()+1, 0);
+    return {start:s, end:e, label:s.toLocaleDateString(undefined,{month:'long',year:'numeric'})};
+  }
+  const s=new Date(now.getFullYear()+perOffset, 0, 1);
+  return {start:s, end:new Date(s.getFullYear(),11,31), label:String(s.getFullYear())};
+}
+function periodDays(){
+  const {start,end}=periodRange();
+  const days=[]; const d=new Date(start);
+  while(d<=end){ days.push({key:dayKey(d.getTime()), date:new Date(d), list:[], scores:[], skipped:false}); d.setDate(d.getDate()+1); }
+  const byKey=Object.fromEntries(days.map(x=>[x.key,x]));
+  entries.forEach(en=>{ const dd=byKey[dayKey(en.ts)]; if(!dd) return;
+    if(en.type==='skip') dd.skipped=true; else { dd.scores.push(en.score); dd.list.push(en); } });
+  return {days, byKey};
+}
+function renderCharts(){
+  $('deepBody').classList.add('hidden');
+  $('deepRow').classList.remove('open');
+  $('deepRow').setAttribute('aria-expanded','false');
+  $('calPop').classList.add('hidden');
+  const pr=periodRange();
+  $('perLabel').textContent=pr.label;
+  $('perNext').disabled = perOffset>=0;
+
+  const W=600,H=210,P={l:26,r:8,t:12,b:24};
+  const y=v=>P.t+(H-P.t-P.b)*(1-(v-1)/9);
+  let grid='';
+  [1,3,5,7,10].forEach(v=>{ grid+=`<line x1="${P.l}" y1="${y(v)}" x2="${W-P.r}" y2="${y(v)}" stroke="#EFEDF5" stroke-width="1" opacity=".6"/><text x="${P.l-7}" y="${y(v)+4}" font-size="10" fill="#A29BB3" text-anchor="end">${v}</text>`; });
+  const band = settings.scaleMode==='anchored' ? `<rect x="${P.l}" y="${y(6)}" width="${W-P.l-P.r}" height="${y(5)-y(6)}" fill="#5FA97C" opacity="0.13"/>` : '';
+  let notes='';
+
+  if(period==='day'){
+    const t0=pr.start.getTime(), t1=t0+86400000;
+    const todays=entries.filter(e=>e.type==='mood'&&e.ts>=t0&&e.ts<t1).sort((a,b)=>a.ts-b.ts);
+    const skips=entries.filter(e=>e.type==='skip'&&e.ts>=t0&&e.ts<t1);
+    const x=ts=>P.l+(W-P.l-P.r)*((ts-t0)/86400000);
+    let labels='';
+    [0,6,12,18,24].forEach(h=>{ const lx=P.l+(W-P.l-P.r)*(h/24);
+      labels+=`<text x="${lx}" y="${H-8}" font-size="10" fill="#A29BB3" text-anchor="middle">${h===0||h===24?'12am':h===12?'12pm':(h%12)+(h<12?'am':'pm')}</text>`; });
+    let path=''; todays.forEach((e,i)=>{ path+=(i?'L':'M')+x(e.ts).toFixed(1)+' '+y(e.score).toFixed(1)+' '; });
+    let dots='';
+    todays.forEach(e=>{ const cl=entryCluster(e); const col=cl?CLUSTER_COLORS[cl]:'#B7AFC9';
+      dots+=`<circle cx="${x(e.ts)}" cy="${y(e.score)}" r="6" fill="${col}"><title>${fmtTime(e.ts)} · ${e.score}${cl?' · '+esc(cl):''}</title></circle>`; });
+    skips.forEach(e=>{ dots+=`<circle cx="${x(e.ts)}" cy="${y(1)}" r="5" fill="#fff" stroke="#8E7CC3" stroke-width="2"/>`; });
+    $('statGrid').innerHTML=`
+      <div class="stat"><b class="num">${todays.length}</b><span>entries</span></div>
+      <div class="stat"><b class="num">${todays.length?(todays.reduce((a,e)=>a+e.score,0)/todays.length).toFixed(1):'–'}</b><span>average</span></div>
+      <div class="stat"><b class="num">${skips.length}</b><span>quiet taps</span></div>
+      <div class="stat"><b class="num">—</b><span>per-day avg</span></div>`;
+    $('lineChart').innerHTML=(todays.length||skips.length)
+      ? `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mood through the day">${grid}${band}<path d="${path}" fill="none" stroke="#D6D1E2" stroke-width="2" stroke-linejoin="round"/>${dots}${labels}</svg>`
+      : `<p class="body2" style="padding:12px 0">No entries in this window yet. The chart will grow with you.</p>`;
+    const bars=todays.filter(e=>e.snap&&Object.keys(e.snap).length)
+      .map(e=>({px:x(e.ts), en:Object.values(e.snap).reduce((a,m)=>a+m.en,0)/Object.keys(e.snap).length}));
+    renderEnergyBars(bars, 10);
+    $('lineLegend').innerHTML=LEGEND_HTML;
+    $('chartNotes').innerHTML=energyFlagNote();
+    const inWin=e=>e.ts>=t0&&e.ts<t1;
+    renderEmoBars(inWin); renderDeepLook(inWin);
+    return;
+  }
+
+  const {days, byKey}=periodDays();
+  const today=new Date(); today.setHours(23,59,59,999);
+  const pastDays=days.filter(d=>d.date<=today);
+  const logged=pastDays.filter(d=>d.scores.length);
+  const skipped=pastDays.filter(d=>d.skipped&&!d.scores.length);
+  const allScores=logged.flatMap(d=>d.scores);
+  const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length):null;
+  const perDay=logged.length?(allScores.length/logged.length):null;   // skip-only days excluded
+  $('statGrid').innerHTML=`
+    <div class="stat"><b class="num">${allScores.length}</b><span>entries</span></div>
+    <div class="stat"><b class="num">${perDay?perDay.toFixed(1):'–'}</b><span>per-day avg</span></div>
+    <div class="stat"><b class="num">${avg?avg.toFixed(1):'–'}</b><span>average mood</span></div>
+    <div class="stat"><b class="num">${skipped.length}</b><span>quiet days</span></div>`;
+  const x=i=>P.l+(W-P.l-P.r)*(days.length===1?0.5:i/(days.length-1));
+  const mon=d=>d.toLocaleDateString(undefined,{month:'short'});
+  let labels='';
+  if(period==='year'){
+    days.forEach((d,i)=>{ if(d.date.getDate()===1) labels+=`<text x="${x(i)}" y="${H-8}" font-size="10" fill="#A29BB3" text-anchor="middle">${mon(d.date)}</text>`; });
+  } else if(period==='month'){
+    const step=Math.max(1,Math.round(days.length/6));
+    days.forEach((d,i)=>{ if(i%step===0||i===days.length-1) labels+=`<text x="${x(i)}" y="${H-8}" font-size="10" fill="#A29BB3" text-anchor="middle">${d.date.getDate()} ${mon(d.date)}</text>`; });
+  } else {
+    days.forEach((d,i)=> labels+=`<text x="${x(i)}" y="${H-8}" font-size="10" fill="#A29BB3" text-anchor="middle">${d.date.getDate()} ${mon(d.date)}</text>`);
+  }
+  let path='', started=false, dots='';
+  days.forEach((d,i)=>{
+    if(!d.scores.length){ started=false;
+      if(d.skipped) dots+=`<circle cx="${x(i)}" cy="${y(1)}" r="${period==='year'?2.5:4.5}" fill="#fff" stroke="#8E7CC3" stroke-width="2"/>`;
+      return; }
+    const py=y(d.scores.reduce((a,b)=>a+b,0)/d.scores.length);
+    path+=(started?'L':'M')+x(i).toFixed(1)+' '+py.toFixed(1)+' '; started=true;
+    const f={}; d.list.forEach(e=>{ const cl=entryCluster(e); if(cl) f[cl]=(f[cl]||0)+1; });
+    const top=Object.entries(f).sort((a,b)=>b[1]-a[1])[0];
+    const col=top?CLUSTER_COLORS[top[0]]:'#B7AFC9';
+    dots+=`<circle cx="${x(i)}" cy="${py}" r="${period==='year'?2.5:5}" fill="${col}"><title>${d.date.getDate()} ${mon(d.date)}${top?' · '+esc(top[0]):''}</title></circle>`;
+  });
+  $('lineChart').innerHTML=(allScores.length||skipped.length)
+    ? `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mood over time">${grid}${band}<path d="${path}" fill="none" stroke="#D6D1E2" stroke-width="2" stroke-linejoin="round"/>${dots}${labels}</svg>`
+    : `<p class="body2" style="padding:12px 0">No entries in this window yet. The chart will grow with you.</p>`;
+  const bars=[]; days.forEach((d,i)=>{ const en=dayEnergy(d); if(en!==null) bars.push({px:x(i), en}); });
+  renderEnergyBars(bars, days.length);
+  $('lineLegend').innerHTML=LEGEND_HTML;
+  const scalesInWindow=new Set(entries.filter(e=>e.type==='mood'&&byKey[dayKey(e.ts)]).map(e=>e.scale||'anchored'));
+  if(scalesInWindow.size>1) notes+=`<p class="note-amber">⚠ mixes both scale meanings</p>`;
+  notes+=energyFlagNote();
+  $('chartNotes').innerHTML=notes;
+  const inWin=e=>!!byKey[dayKey(e.ts)];
+  renderEmoBars(inWin); renderDeepLook(inWin);
+}
+function renderEnergyBars(bars, slots){
+  const W=600,H=72,P={l:26,r:8,t:8,b:6};
+  const ey=v=>P.t+(H-P.t-P.b)*(1-(v-1)/4);
+  const base=ey(1);
+  const grid=[1,5].map(v=>`<line x1="${P.l}" y1="${ey(v)}" x2="${W-P.r}" y2="${ey(v)}" stroke="#EFEDF5" opacity=".6"/><text x="${P.l-7}" y="${ey(v)+3.5}" font-size="9" fill="#A29BB3" text-anchor="end">${v}</text>`).join('');
+  const bw=Math.max(2, Math.min(16, (W-P.l-P.r)/Math.max(slots,1)*0.55));
+  let rects='';
+  (bars||[]).forEach(b=>{
+    const top=ey(b.en);
+    rects+=`<rect x="${(b.px-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(2,(base-top)).toFixed(1)}" rx="${Math.min(3,bw/2)}" fill="#C98A2E" opacity="0.85"/>`;
+  });
+  $('energyChart').innerHTML = (bars&&bars.length)
+    ? `<svg class="chart" viewBox="0 0 ${W} ${H}" style="margin-top:6px" role="img" aria-label="Energy 1 to 5">${grid}${rects}</svg>`
+    : `<p class="cap" style="padding:8px 0 2px">Energy patterns will appear once you tag feelings with your entries.</p>`;
+}
+function energyFlagNote(){
+  const {days}=dayWindow(14);
+  const series=days.map(d=>({en:dayEnergy(d), d}));
+  let run=[];
+  for(const p of series){
+    if(p.en===null){ run=[]; continue; }
+    if(!run.length||p.en>=run[run.length-1].en-0.01) run.push(p); else run=[p];
+  }
+  if(run.length>=10 && (run[run.length-1].en-run[0].en)>0.5){
+    let pos=0,tot=0;
+    run.forEach(p=>p.d.list.forEach(e=>{ if(e.snap) Object.values(e.snap).forEach(m=>{ tot++; if(m.v==='Positive') pos++; }); }));
+    if(tot && pos/tot<0.4)
+      return `<p class="note-amber">Your energy has been climbing for a while — could be worth mentioning at your next appointment.</p>`;
+  }
+  return '';
+}
+
+/* ---- what shows up ---- */
+let emoDrilled=false, lastEmoFilter=()=>true;
+function barItem(label, count, max, color, suffix){
+  return `<div class="bar-item"><div class="bar-lab"><span>${esc(label)}</span><span class="num">${count}${suffix||''}</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6,max?count/max*100:0)}%;background:${color}"></div></div></div>`;
+}
+function renderEmoBars(filterFn){
+  lastEmoFilter=filterFn||lastEmoFilter;
+  const freq={};
+  entries.forEach(e=>{
+    if(e.type!=='mood'||!lastEmoFilter(e)) return;
+    (e.emotions||[]).forEach(id=>{
+      const d=defById(id);
+      const key=emoDrilled?d.n:(CLUSTERS.includes(d.g)?d.g:(HELD_CLOSE.includes(id)?'Held close':'Yours'));
+      freq[key]=(freq[key]||0)+1;
+    });
+  });
+  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,emoDrilled?8:6);
+  const mx=top.length?top[0][1]:1;
+  const colorFor=k=>emoDrilled
+    ? ((BUILTINS.find(b=>b.n===k)||customs().find(c=>c.n===k)||(settings.archivedEmotions||[]).find(c=>c.n===k)||{c:'#8E7CC3'}).c)
+    : (CLUSTER_COLORS[k]||'#8E7CC3');
+  $('emoChart').innerHTML = top.length
+    ? top.map(([m,c])=>barItem(m,c,mx,colorFor(m))).join('')
+    : `<p class="body2" style="padding:8px 0">Once you tag emotions, patterns will show here.</p>`;
+}
+
+/* ---- a gentle look deeper (airy, one metric per breath) ---- */
+function windowStats(filterFn){
+  const snapped=entries.filter(e=>e.type==='mood'&&filterFn(e)&&e.snap&&Object.keys(e.snap).length);
+  const tagCount={Positive:0,Neutral:0,Negative:0,Mixed:0}; let tags=0;
+  const regEntries={Regulated:0,Vulnerable:0,Dysregulated:0,Dissociative:0};
+  let conn=0,disc=0,allNeutral=0;
+  const regTag={Regulated:0,Vulnerable:0,Dysregulated:0,Dissociative:0};
+  const socTag={Connection:0,Disconnection:0,Neutral:0};
+  snapped.forEach(e=>{
+    const rs=new Set(), ss=new Set();
+    Object.values(e.snap).forEach(m=>{ tagCount[m.v]=(tagCount[m.v]||0)+1; tags++; rs.add(m.r); ss.add(m.s);
+      regTag[m.r]=(regTag[m.r]||0)+1; socTag[m.s]=(socTag[m.s]||0)+1; });
+    rs.forEach(r=>regEntries[r]=(regEntries[r]||0)+1);
+    if(ss.has('Connection')) conn++;
+    if(ss.has('Disconnection')) disc++;
+    if(!ss.has('Connection')&&!ss.has('Disconnection')) allNeutral++;
+  });
+  return {snapped,tagCount,tags,regEntries,regTag,socTag,conn,disc,allNeutral,n:snapped.length};
+}
+function pct(a,b){ return b?Math.round(a/b*100):0; }
+function renderDeepLook(filterFn){
+  const st=windowStats(filterFn);
+  const dl=$('deepBody');
+  if(!st.n){ dl.innerHTML=`<p class="body2" style="padding:16px 2px 8px">These gentle patterns will appear once you tag feelings with your entries.</p>`; return; }
+  let html='';
+  html+=`<div class="deep-sec"><div class="deep-title">Valence balance</div><div class="deep-cap">Of every feeling you tagged, how many leaned each way · adds up to 100%</div>`;
+  const vOrder=['Positive','Neutral','Negative','Mixed'];
+  const vMax=Math.max(...vOrder.map(v=>pct(st.tagCount[v],st.tags)),1);
+  vOrder.forEach(v=> html+=barItem(v, pct(st.tagCount[v],st.tags), vMax, VAL_COLORS[v], '%'));
+  html+=`</div><div class="deep-sec"><div class="deep-title">Regulation mix</div><div class="deep-cap">How steerable your tagged feelings usually are · adds up to 100%</div>`;
+  const rOrder=['Regulated','Vulnerable','Dysregulated','Dissociative'];
+  const rMax=Math.max(...rOrder.map(r=>pct(st.regTag[r],st.tags)),1);
+  rOrder.forEach(r=> html+=barItem(REG_PLAIN[r], pct(st.regTag[r],st.tags), rMax, '#8E7CC3', '%'));
+  html+=`</div><div class="deep-sec"><div class="deep-title">Connection</div><div class="deep-cap">Which way your tagged feelings pull, people-wise · adds up to 100%</div>`;
+  const cVals=[['Toward people',pct(st.socTag.Connection,st.tags),'#5E9AA8'],['Neither',pct(st.socTag.Neutral,st.tags),'#B9B3C6'],['Away from people',pct(st.socTag.Disconnection,st.tags),'#8E9AB5']];
+  const cMax=Math.max(...cVals.map(c=>c[1]),1);
+  cVals.forEach(([l,v,c])=> html+=barItem(l, v, cMax, c, '%'));
+  html+=`</div>`;
+  const tileDays={};
+  entries.filter(e=>e.type==='mood'&&filterFn(e)).forEach(e=>{
+    (e.activities||[]).forEach(tid=>{
+      tileDays[tid]=tileDays[tid]||{n:0,steady:0};
+      tileDays[tid].n++;
+      if(steadyAvg(e.score,e.scale)) tileDays[tid].steady++;
+    });
+  });
+  const notes=[];
+  Object.entries(tileDays).forEach(([tid,v])=>{
+    if(v.n>=5&&v.steady/v.n>0.5) notes.push(`You tagged <b>${esc(tileById(tid).n)}</b> on many of your steadier days.`);
+  });
+  if(notes.length){
+    html+=`<div class="deep-sec"><div class="deep-title">Noticing</div>`;
+    html+=notes.slice(0,2).map(n=>`<p class="body2" style="margin-top:10px">${n}</p>`).join('');
+    html+=`</div>`;
+  }
+  html+=`<div style="height:12px"></div>`;
+  dl.innerHTML=html;
+}
+
+/* ============ serializers (shared: Settings ↔ dashboards) ============ */
+function entryMetaCols(e){
+  if(!e.snap||!Object.keys(e.snap).length) return {v:'',en:'',r:'',s:''};
+  const ms=Object.values(e.snap);
+  const j=arr=>[...new Set(arr)].join('; ');
+  return { v:j(ms.map(m=>m.v)), en:(ms.reduce((a,m)=>a+m.en,0)/ms.length).toFixed(1), r:j(ms.map(m=>m.r)), s:j(ms.map(m=>m.s)) };
+}
+const DOC_FOOT = ()=>`<div class="doc-foot">Steady by Ritmann · v1.6 · exported ${new Date().toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'})}</div>`;
+function logDocHTML(list){
+  const rangeStr = list.length ? fmtDM(list[0].ts)+' – '+fmtDM(list[list.length-1].ts) : '';
+  let html=`<div class="doc"><div class="doc-top">
+    <div><h1>Steady — Journal export</h1>
+      <div class="doc-meta num">${settings.name?esc(settings.name)+' · ':''}${rangeStr}</div></div>
+    <button class="pillbtn no-print" id="dashDone">Done</button></div><hr>`;
+  html+=list.map(e=>{
+    if(e.type==='skip') return `<div class="doc-row"><span class="d num">${fmtDM(e.ts)} ${fmtTime(e.ts)}</span><span class="d">Chose not to log</span></div>`;
+    const emos=(e.emotions||[]).map(id=>defById(id).n).join(', ');
+    const acts=(e.activities||[]).map(id=>tileById(id).n).join(' · ');
+    return `<div class="doc-row"><span class="d num">${fmtDM(e.ts)} ${fmtTime(e.ts)} · <b style="color:var(--ink)">${e.score}</b></span>
+      <span>${emos?esc(emos):''}${acts?`<span class="d"> ⌂ ${acts}</span>`:''}${e.note?`<div class="d" style="margin-top:2px">${esc(e.note)}</div>`:''}</span></div>`;
+  }).join('');
+  html+=`<button class="btn-primary no-print" id="dashPrint" style="margin-top:26px">Save as PDF</button>`;
+  html+=DOC_FOOT()+`</div>`;
+  return html;
+}
+function openPrintDoc(html, onPrint){
+  $('dashOverlay').innerHTML=html;
+  document.body.classList.add('dash-open');
+  $('dashOverlay').scrollTop=0;
+  $('dashDone').onclick=()=>{ document.body.classList.remove('dash-open'); $('dashOverlay').innerHTML=''; };
+  const pr=$('dashPrint'); if(pr) pr.onclick=()=>{ if(onPrint) onPrint(); window.print(); };
+}
+function buildJSON(list, includeNotes){
+  const mapped=list.map(({photoIds,note,...e})=>({
+    ...e,
+    emotions:(e.emotions||[]).map(id=>defById(id).n),
+    activities:(e.activities||[]).map(id=>tileById(id).n),
+    ...(includeNotes?{note}:{})
+  }));
+  return JSON.stringify({app:'Steady', version:'1.6', scaleMode:settings.scaleMode, exportedAt:new Date().toISOString(), entries:mapped}, null, 2);
+}
+function entryText(e, includeNotes){
+  const when=new Date(e.ts).toLocaleString(undefined,{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+  if(e.type==='skip') return `${when} — chose not to log`;
+  const emos=(e.emotions||[]).map(id=>defById(id).n).join(', ');
+  const acts=(e.activities||[]).map(id=>tileById(id).n).join(', ');
+  return `${when} — ${e.score}/10${emos?' — '+emos:''}${acts?' — while: '+acts:''}${includeNotes&&e.note?' — '+e.note:''}`;
+}
+async function copyText(list, includeNotes){
+  const text='My mood log (Steady)\n'+list.map(e=>entryText(e,includeNotes)).join('\n');
+  try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere — a chat, an email, an AI tool.'); }
+  catch(err){ download('steady-log.txt', text, 'text/plain'); toast('Clipboard blocked — downloaded as text instead.'); }
+}
+function inRange(e){
+  const f=$('expFrom').value, t=$('expTo').value;
+  const fs=f?new Date(f+'T00:00:00').getTime():-Infinity;
+  const te=t?new Date(t+'T23:59:59').getTime():Infinity;
+  return e.ts>=fs&&e.ts<=te;
+}
+function download(name, text, type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function exportList(){ return entries.filter(inRange).sort((a,b)=>a.ts-b.ts); }
+
+/* ============ import (SPEC §8.3) ============ */
+function nameToEmoId(name){
+  const low=name.toLowerCase();
+  const b=BUILTINS.find(x=>x.n.toLowerCase()===low); if(b) return b.id;
+  const c=customs().find(x=>x.n.toLowerCase()===low); if(c) return c.id;
+  const a=(settings.archivedEmotions||[]).find(x=>x.n.toLowerCase()===low); if(a) return a.id;
+  const def={id:uid('c'), n:name, c:'#8E7CC3', g:'Yours', meta:DEFAULT_META(), metaSet:false};
+  if(isHarmWord(name)){ settings.archivedEmotions=settings.archivedEmotions||[]; settings.archivedEmotions.push(def); }
+  else settings.customEmotions.push(def);
+  return def.id;
+}
+function nameToTileId(name){
+  const low=name.toLowerCase();
+  const t=(settings.tiles||[]).find(x=>x.n.toLowerCase()===low); if(t) return t.id;
+  const a=(settings.archivedTiles||[]).find(x=>x.n.toLowerCase()===low); if(a) return a.id;
+  const nt={id:uid('t'), n:name}; settings.tiles.push(nt); return nt.id;
+}
+async function importBackup(file){
+  let data;
+  try{ data=JSON.parse(await file.text()); }
+  catch(err){ toast('That file couldn\'t be read as a Steady backup.'); return; }
+  if(!data||!Array.isArray(data.entries)){ toast('That file couldn\'t be read as a Steady backup.'); return; }
+  const existing=new Set(entries.map(e=>e.id));
+  let added=0;
+  for(const raw of data.entries){
+    if(!raw||!raw.id||existing.has(raw.id)) continue;           // never duplicate ids
+    const e={ id:raw.id, ts:raw.ts, type:raw.type==='skip'?'skip':'mood' };
+    if(e.type==='mood'){
+      e.score=raw.score; e.scale=raw.scale||'';
+      e.emotions=(raw.emotions||[]).map(n=>nameToEmoId(String(n)));
+      e.activities=(raw.activities||[]).map(n=>nameToTileId(String(n)));
+      if(raw.snap) e.snap=raw.snap;                              // preserved verbatim; never fabricated
+      if(raw.note) e.note=raw.note;
+    }
+    await putEntry(e); entries.push(e); existing.add(e.id); added++;
+  }
+  entries.sort((a,b)=>b.ts-a.ts);
+  await kvSet('settings',settings);
+  renderEmotions(); renderPool(); renderTimeline(); renderCharts(); renderCalendar();
+  toast(`Backup restored. ${added} entries added.`);
+}
+
+/* ============ dashboards — clinical documents ============ */
+let dashKind=null, dashConsent={notes:false,photos:false}, dashRange={from:0,to:0}, shareRangeVal='p14';
+function openDashFlow(kind){
+  dashKind=kind;
+  $('shareNotes').checked=(kind==='ther');
+  $('sharePhotos').checked=false;
+  shareRangeVal='p14';
+  $('shareRangeGrid').querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.r==='p14'));
+  $('shareCustom').classList.add('hidden');
+  $('shareTitle').textContent = kind==='psy'?'Psychiatrist snapshot':'Therapist view';
+  sheet('shareBg');
+}
+function computeDashRange(){
+  const now=Date.now();
+  if(shareRangeVal==='p14') return {from:now-14*86400000, to:now};
+  if(shareRangeVal==='p30') return {from:now-30*86400000, to:now};
+  if(shareRangeVal==='since') return {from:settings.lastShared||(now-14*86400000), to:now};
+  const f=$('shareFrom').value, t=$('shareTo').value;
+  return {from:f?new Date(f+'T00:00:00').getTime():now-14*86400000, to:t?new Date(t+'T23:59:59').getTime():now};
+}
+function dashEntries(){ return entries.filter(e=>e.ts>=dashRange.from&&e.ts<=dashRange.to).sort((a,b)=>a.ts-b.ts); }
+function weeklyRollup(list){
+  const weeks={};
+  list.forEach(e=>{
+    const d=new Date(e.ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay());
+    const k=d.getTime();
+    weeks[k]=weeks[k]||{start:d,scores:[],energies:[],scales:new Set(),quiet:0,entries:0,highs:new Set(),lows:new Set(),clusters:{}};
+    const w=weeks[k];
+    if(e.type==='skip'){ w.quiet++; return; }
+    w.entries++; w.scores.push(e.score); w.scales.add(e.scale||'anchored');
+    if(e.snap&&Object.keys(e.snap).length) w.energies.push(Object.values(e.snap).reduce((a,m)=>a+m.en,0)/Object.keys(e.snap).length);
+    const cl=entryCluster(e); if(cl) w.clusters[cl]=(w.clusters[cl]||0)+1;
+    const dk=dayKey(e.ts);
+    if(e.score>=8) w.highs.add(dk);
+    if(e.score<=3) w.lows.add(dk);
+  });
+  return Object.values(weeks).sort((a,b)=>a.start-b.start);
+}
+function docLine(weeks, getVal, yMin, yMax, band, H){
+  const W=600; H=H||140; const P={l:28,r:8,t:10,b:20};
+  const y=v=>P.t+(H-P.t-P.b)*(1-(v-yMin)/(yMax-yMin));
+  const x=i=>P.l+(W-P.l-P.r)*(weeks.length===1?0.5:i/(weeks.length-1));
+  let g=band?`<rect x="${P.l}" y="${y(6)}" width="${W-P.l-P.r}" height="${y(5)-y(6)}" fill="#5FA97C" opacity="0.13"/>`:'';
+  [yMin,yMax].forEach(v=>{ g+=`<text x="${P.l-7}" y="${y(v)+4}" font-size="10" fill="#6E687C" text-anchor="end">${v}</text>`; });
+  let path='', started=false, dots='', labels='';
+  weeks.forEach((w,i)=>{
+    const v=getVal(w);
+    labels+=`<text x="${x(i)}" y="${H-5}" font-size="9" fill="#6E687C" text-anchor="middle">${w.start.getDate()}/${w.start.getMonth()+1}</text>`;
+    if(v===null){ started=false; return; }
+    if(i>0&&[...w.scales][0]&&[...weeks[i-1].scales][0]&&[...w.scales][0]!==[...weeks[i-1].scales][0]) started=false; // break at scale switch
+    path+=(started?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' '; started=true;
+    const top=Object.entries(w.clusters).sort((a,b)=>b[1]-a[1])[0];
+    dots+=`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="${top?CLUSTER_COLORS[top[0]]:'#2B2733'}"/>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}<path d="${path}" fill="none" stroke="#2B2733" stroke-width="2"/>${dots}${labels}</svg>`;
+}
+function adherenceInRange(){
+  const meds=settings.reminders.filter(r=>r.type==='med'&&r.enabled);
+  if(!meds.length) return null;
+  const from=Math.max(dashRange.from, settings.journeyStart||dashRange.from);
+  let scheduled=0;
+  const d=new Date(from); d.setHours(0,0,0,0);
+  const endT=Math.min(dashRange.to, Date.now());
+  while(d.getTime()<=endT){ meds.forEach(r=>{ if(occursToday(r,d)) scheduled++; }); d.setDate(d.getDate()+1); }
+  scheduled=Math.max(1,scheduled);
+  const taken=Object.keys(settings.taken||{}).filter(k=>{
+    const ts=new Date(k.split('|')[1]+'T12:00:00').getTime();
+    return ts>=dashRange.from&&ts<=dashRange.to;
+  }).length;
+  return Math.min(100, Math.round(taken/scheduled*100));
+}
+function renderDash(){
+  dashRange=computeDashRange();
+  dashConsent={notes:$('shareNotes').checked, photos:$('sharePhotos').checked};
+  settings.lastShared=Date.now(); kvSet('settings',settings);
+  sheet('shareBg', false);
+  const list=dashEntries();
+  const weeks=weeklyRollup(list);
+  const scaleSwitch=new Set(list.filter(e=>e.type==='mood').map(e=>e.scale||'anchored')).size>1;
+  const rangeStr=fmtDM(dashRange.from)+' – '+fmtDM(dashRange.to);
+  const prepared=new Date().toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+  let html=`<div class="doc"><div class="doc-top">
+    <div><h1>Steady — ${dashKind==='psy'?'Psychiatrist snapshot':'Therapist view'}</h1>
+      <div class="doc-meta num">${settings.name?esc(settings.name)+' · ':''}${rangeStr} · prepared ${prepared}</div></div>
+    <button class="pillbtn no-print" id="dashDone">Done</button></div><hr>`;
+  if(!list.length){
+    html+=`<p class="body2">No entries in this window yet — this view will fill in as check-ins are logged.</p>`;
+  } else if(dashKind==='psy'){
+    const highs=new Set(), lows=new Set(); let quiet=0, cnt=0;
+    weeks.forEach(w=>{ w.highs.forEach(d=>highs.add(d)); w.lows.forEach(d=>lows.add(d)); quiet+=w.quiet; cnt+=w.entries; });
+    html+=`<div class="doc-sec">Mood — weekly averages${scaleSwitch?` <span style="color:var(--amber-ink);text-transform:none;letter-spacing:0">· scale switched inside this range; segments are not comparable</span>`:''}</div>`;
+    html+=docLine(weeks, w=>w.scores.length?w.scores.reduce((a,b)=>a+b,0)/w.scores.length:null, 1, 10, settings.scaleMode==='anchored', 150);
+    html+=`<div class="doc-sec">Energy — weekly averages (1–5)</div>`;
+    html+= weeks.some(w=>w.energies.length)
+      ? docLine(weeks, w=>w.energies.length?w.energies.reduce((a,b)=>a+b,0)/w.energies.length:null, 1, 5, false, 100)
+      : `<p class="body2">Energy patterns will appear once feelings are tagged with entries.</p>`;
+    const adh=adherenceInRange();
+    html+=`<div class="doc-sec">Range totals</div>
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat" style="background:#F7F6FA"><b class="num">${highs.size}</b><span>high days</span></div>
+        <div class="stat" style="background:#F7F6FA"><b class="num">${lows.size}</b><span>low days</span></div>
+        <div class="stat" style="background:#F7F6FA"><b class="num">${quiet}</b><span>quiet days</span></div>
+        <div class="stat" style="background:#F7F6FA"><b class="num">${cnt}</b><span>entries</span></div></div>`;
+    html+=`<div class="doc-sec">Medication</div>`;
+    html+= adh===null
+      ? `<p class="body2">Not tracked yet — add a medicine reminder in Care to see this.</p>`
+      : `<p style="font-size:28px;font-weight:700" class="num">${adh}% <span class="cap" style="font-weight:400">of scheduled doses marked taken</span></p>`;
+    html+=`<button class="btn-primary no-print" id="dashPrint" style="margin-top:26px">Save as PDF</button>`;
+  } else {
+    const st=windowStats(e=>e.ts>=dashRange.from&&e.ts<=dashRange.to);
+    const wk=7*86400000, now=dashRange.to;
+    const stThis=windowStats(e=>e.ts>now-wk&&e.ts<=now);
+    const stPrev=windowStats(e=>e.ts>now-2*wk&&e.ts<=now-wk);
+    const arrow=(a,b)=>{ const d=a-b; return d>5?'↑':(d<-5?'↓':'→'); };
+    html+=`<div class="doc-sec">Regulation mix — % of entries containing · vs prior week</div>`;
+    if(st.n){
+      ['Regulated','Vulnerable','Dysregulated','Dissociative'].forEach(r=>{
+        const v=pct(st.regEntries[r],st.n);
+        html+=`<div class="bar-item"><div class="bar-lab"><span>${REG_PLAIN[r]}</span><span class="num">${v}% ${arrow(pct(stThis.regEntries[r],stThis.n||1),pct(stPrev.regEntries[r],stPrev.n||1))}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6,v)}%;background:#8E7CC3"></div></div></div>`;
+      });
+    } else html+=`<p class="body2">These patterns will appear once feelings are tagged with entries.</p>`;
+    html+=`<div class="doc-sec">Connection — % of entries containing</div>`;
+    if(st.n){
+      const cMax=Math.max(pct(st.conn,st.n),pct(st.disc,st.n),1);
+      html+=barItem('Toward people',pct(st.conn,st.n),cMax,'#5E9AA8','%')+barItem('Away from people',pct(st.disc,st.n),cMax,'#8E9AB5','%');
+    } else html+=`<p class="body2">Not enough tagged entries yet.</p>`;
+    const pairs={};
+    list.forEach(e=>{
+      if(e.type!=='mood') return;
+      const cl=entryCluster(e); if(!cl) return;
+      (e.activities||[]).forEach(tid=>{ const k=cl+'|'+tid; pairs[k]=(pairs[k]||0)+1; });
+    });
+    const top=Object.entries(pairs).filter(([,c])=>c>=5).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(top.length){
+      html+=`<div class="doc-sec">Often together — associational, not causal</div>`;
+      top.forEach(([k,c])=>{ const [cl,tid]=k.split('|');
+        html+=`<p style="margin-top:8px;font-size:14.5px" class="num"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${CLUSTER_COLORS[cl]};margin-right:7px"></i><b>${esc(cl)}</b> · ${esc(tileById(tid).n)} · ${c} times</p>`; });
+    }
+    html+=`<div class="doc-sec">Entries</div>`;
+    html+=list.map(e=>{
+      if(e.type==='skip') return `<div class="doc-row"><span class="d num">${fmtDM(e.ts)} ${fmtTime(e.ts)}</span><span class="d">Chose not to log</span></div>`;
+      const emos=(e.emotions||[]).map(id=>{ const d=defById(id); const cl=CLUSTERS.includes(d.g)?d.g:'Yours';
+        return `<span style="white-space:nowrap"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${CLUSTER_COLORS[cl]||d.c};margin-right:4px"></i>${esc(d.n)}</span>`; }).join(' ');
+      const acts=(e.activities||[]).map(id=>esc(tileById(id).n)).join(' · ');
+      return `<div class="doc-row"><span class="d num">${fmtDM(e.ts)} ${fmtTime(e.ts)} · <b style="color:var(--ink)">${e.score}</b></span>
+        <span>${emos}${acts?`<span class="d"> ⌂ ${acts}</span>`:''}${dashConsent.notes&&e.note?`<div class="d" style="margin-top:2px">${esc(e.note)}</div>`:''}</span></div>`;
+    }).join('');
+    html+=`<div style="display:flex;gap:8px;margin-top:26px" class="no-print">
+      <button class="btn-quiet" id="dashCopy" style="flex:1">Copy as text</button>
+      <button class="btn-primary" id="dashPrint" style="flex:1">Save as PDF</button></div>`;
+  }
+  html+=DOC_FOOT()+`</div>`;
+  $('dashOverlay').innerHTML=html;
+  document.body.classList.add('dash-open');
+  $('dashOverlay').scrollTop=0;
+  $('dashDone').onclick=()=>{ document.body.classList.remove('dash-open'); $('dashOverlay').innerHTML=''; };
+  const mark=()=>{ settings.lastShared=Date.now(); kvSet('settings',settings); };
+  const pr=$('dashPrint'); if(pr) pr.onclick=()=>{ mark(); window.print(); };
+  const dcp=$('dashCopy'); if(dcp) dcp.onclick=()=>{ mark(); copyText(dashEntries(), dashConsent.notes); };
+}
+
+/* ============ reminders + taken ============ */
+function renderReminders(){
+  const wrap=$('remList');
+  if(!settings.reminders.length){ wrap.innerHTML=`<p class="cap" style="padding:14px 16px">No reminders yet. Medicine times and a daily check-in are good places to start.</p>`; return; }
+  const occText = r => r.occ==='weekly' ? 'Weekly · '+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][r.dow||0]
+    : r.occ==='monthly' ? 'Monthly · '+(r.dom||1)+(['th','st','nd','rd'][((r.dom||1)%10>3||Math.floor((r.dom||1)%100/10)===1)?0:(r.dom||1)%10]||'th')
+    : 'Daily';
+  wrap.innerHTML=settings.reminders.map(r=>`
+    <div class="row rowline">
+      <div style="min-width:0"><div style="font-size:16px"><span class="num">${r.time}</span> · ${esc(r.label)}</div>
+        <div class="cap">${r.type==='med'?'Medicine':'Mood check-in'} · ${occText(r)}</div></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <label class="switch"><input type="checkbox" data-tgl="${r.id}" ${r.enabled?'checked':''}><i></i></label>
+        <button class="pillbtn" data-rdel="${r.id}">remove</button>
+      </div>
+    </div>`).join('');
+  wrap.querySelectorAll('[data-tgl]').forEach(c=> c.onchange=()=>{ const r=settings.reminders.find(x=>x.id===c.dataset.tgl); r.enabled=c.checked; kvSet('settings',settings); renderMedCard(); });
+  wrap.querySelectorAll('[data-rdel]').forEach(b=> b.onclick=async ()=>{
+    if(!(await confirmSheet('Remove this reminder?'))) return;
+    settings.reminders=settings.reminders.filter(x=>x.id!==b.dataset.rdel);
+    kvSet('settings',settings); renderReminders(); renderMedCard();
+  });
+}
+function occursToday(r, d){
+  d = d || new Date();
+  if(r.occ==='weekly') return d.getDay()===(r.dow||0);
+  if(r.occ==='monthly') return d.getDate()===(r.dom||1);
+  return true;
+}
+const sessionLater = new Set();
+function markTaken(rid){
+  settings.taken=settings.taken||{};
+  settings.taken[rid+'|'+dayKey(Date.now())]=true;
+  kvSet('settings',settings); renderMedCard();
+  toast('Noted. 💜');
+}
+function renderMedCard(){
+  const card=$('medCard');
+  const today=dayKey(Date.now());
+  const now=new Date();
+  const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const due=settings.reminders.filter(r=> r.type==='med' && r.enabled && occursToday(r, now) && r.time<=hm
+    && !(settings.taken&&settings.taken[r.id+'|'+today])          // taken → disappears
+    && !((settings.medSkipped||{})[r.id+'|'+today])               // "not today" → gone for today
+    && !sessionLater.has(r.id));                                  // "later" → back on next launch
+  if(!due.length){ card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  $('medRows').innerHTML=due.map(r=>`
+    <div class="row rowline" style="min-height:44px">
+      <span style="font-size:15px;min-width:0"><b class="num">${r.time}</b> · ${esc(r.label)}</span>
+      <span style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+        <button class="pillbtn" data-take="${r.id}">Taken</button>
+        <button class="pillbtn" data-later="${r.id}" style="background:transparent;border:1px solid var(--hair);color:var(--ink2)">Later</button>
+        <button class="pillbtn" data-skip="${r.id}" title="Not today" aria-label="Not today" style="background:transparent;color:var(--ink2);padding:6px 8px">✕</button>
+      </span></div>`).join('');
+  $('medRows').querySelectorAll('[data-take]').forEach(b=> b.onclick=()=>markTaken(b.dataset.take));
+  $('medRows').querySelectorAll('[data-later]').forEach(b=> b.onclick=()=>{ sessionLater.add(b.dataset.later); renderMedCard(); toast('Okay — it\'ll come back next time you open Steady.'); });
+  $('medRows').querySelectorAll('[data-skip]').forEach(b=> b.onclick=()=>{
+    settings.medSkipped=settings.medSkipped||{};
+    settings.medSkipped[b.dataset.skip+'|'+today]=true;
+    kvSet('settings',settings); renderMedCard();
+  });
+}
+function checkReminders(){
+  const now=new Date();
+  const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const today=dayKey(now.getTime());
+  settings.reminders.forEach(r=>{
+    if(!r.enabled||r.time!==hm||r.lastFired===today||!occursToday(r, now)) return;
+    if(settings.quiet&&r.type==='mood') return;
+    r.lastFired=today; kvSet('settings',settings);
+    const msg=r.type==='med'?`Medicine time: ${r.label}`:`Gentle check-in: ${r.label||'how are you feeling?'}`;
+    if('Notification' in window&&Notification.permission==='granted'){ try{ new Notification('Steady',{body:msg}); }catch(e){} }
+    toast('⏰ '+msg, 8000);
+    if(r.type==='med') renderMedCard();
+  });
+}
+
+/* ============ pools (Settings sheets) ============ */
+function renderPool(){
+  const hidden=new Set(settings.hiddenEmotions||[]);
+  $('poolChips').innerHTML=BUILTINS.filter(b=>!HELD_CLOSE.includes(b.id)).map(d=>{
+    const off=hidden.has(d.id);
+    return `<button class="chip" data-pool="${d.id}" style="${off?'opacity:.35':''}"><i class="dot" style="background:${d.c}"></i>${esc(d.n)}</button>`;
+  }).join('');
+  $('poolChips').querySelectorAll('[data-pool]').forEach(b=> b.onclick=()=>togglePool(b.dataset.pool));
+  $('poolCustoms').innerHTML=customs().length
+    ? customs().map(d=>{
+        const off=hidden.has(d.id);
+        return `<div class="row" style="padding-left:0;padding-right:0;min-height:52px">
+          <button class="chip" data-pool="${d.id}" style="${off?'opacity:.35':''}"><i class="dot" style="background:${d.c}"></i>${esc(d.n)}</button>
+          <button class="pillbtn" data-edit="${d.id}">edit</button>
+        </div>`; }).join('')
+    : `<p class="cap">No words of your own yet — add them from the Today screen.</p>`;
+  $('poolCustoms').querySelectorAll('[data-pool]').forEach(b=> b.onclick=()=>togglePool(b.dataset.pool));
+  $('poolCustoms').querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>{ sheet('poolBg', false); openEmoSheet(b.dataset.edit); });
+  const hidT=new Set(settings.hiddenTiles||[]);
+  $('poolTiles').innerHTML=(settings.tiles||[]).length
+    ? (settings.tiles||[]).map(t=>{
+        const off=hidT.has(t.id);
+        return `<div class="row" style="padding-left:0;padding-right:0;min-height:52px">
+          <button class="chip tile" data-tpool="${t.id}" style="${off?'opacity:.35':''}">${t.emoji?t.emoji+' ':''}${esc(t.n)}</button>
+          <button class="pillbtn" data-tedit="${t.id}">edit</button>
+        </div>`; }).join('')
+    : `<p class="cap">No activity tiles yet — add them from the Today screen.</p>`;
+  $('poolTiles').querySelectorAll('[data-tpool]').forEach(b=> b.onclick=()=>{
+    const id=b.dataset.tpool;
+    const set=new Set(settings.hiddenTiles||[]);
+    set.has(id)?set.delete(id):set.add(id);
+    settings.hiddenTiles=[...set]; kvSet('settings',settings);
+    selectedTiles.delete(id);
+    renderPool(); renderTiles();
+  });
+  $('poolTiles').querySelectorAll('[data-tedit]').forEach(b=> b.onclick=()=>{ openTileEdit(b.dataset.tedit); });
+}
+function togglePool(id){
+  const set=new Set(settings.hiddenEmotions||[]);
+  set.has(id)?set.delete(id):set.add(id);
+  settings.hiddenEmotions=[...set]; kvSet('settings',settings);
+  selectedEmotions.delete(id);
+  renderPool(); renderEmotions();
+}
+
+/* ============ nav, quiet, settings, wiring ============ */
+function switchView(v){
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on', x.dataset.view===v));
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  $('view-'+v).classList.add('active');
+  if(v==='patterns'){ renderCalendar(); renderCharts(); }
+  if(v==='timeline') renderTimeline();
+  window.scrollTo({top:0});
+}
+function renderQuiet(){
+  $('quietBtn').classList.toggle('on', settings.quiet);
+  $('quietBtn').setAttribute('aria-pressed', settings.quiet);
+  $('quietBtn').textContent = settings.quiet?'Quiet on':'Quiet';
+}
+function greet(){ $('greet').textContent = settings.name?`How are you right now, ${settings.name}?`:'How are you right now?'; }
+function syncScaleUI(){
+  $('scaleVal').textContent = settings.scaleMode==='anchored'?'Anchored':'Simple';
+  $('scaleSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.scale===settings.scaleMode));
+}
+function wireAll(){
+  document.querySelectorAll('nav button').forEach(b=> b.onclick=()=>switchView(b.dataset.view));
+  $('dial').addEventListener('input', renderDial);
+  $('dial').addEventListener('change', renderEmotions);
+  $('saveBtn').onclick=saveEntry;
+  $('skipBtn').onclick=saveSkip;
+  $('photoAdd').onclick=()=> $('photoInput').click();
+  $('photoInput').onchange=async e=>{
+    for(const f of e.target.files){ try{ pendingPhotos.push(await compressImage(f)); }catch(err){ toast('That image couldn\'t be added.'); } }
+    e.target.value=''; renderPendingPhotos();
+  };
+  $('quietBtn').onclick=()=>{
+    settings.quiet=!settings.quiet; kvSet('settings',settings); renderQuiet();
+    toast(settings.quiet?'Quiet mode on. Mood reminders paused; medicine reminders stay on.':'Quiet mode off. Welcome back. 💜', 3600);
+  };
+  $('glossBtn').onclick=()=>{
+    learnMode=!learnMode;
+    $('emoGroups').classList.toggle('learn', learnMode);
+    $('glossBtn').textContent = learnMode?'✓ done learning':'ⓘ what these mean';
+    if(learnMode) toast('Tap any glowing word to see what it means.', 3200);
+  };
+  $('wordOk').onclick=()=>sheet('wordBg', false);
+  $('wordBg').onclick=e=>{ if(e.target===$('wordBg')) sheet('wordBg', false); };
+  wireEmoSheet(); wireTileSheets();
+  // patterns
+  $('rangeSeg').querySelectorAll('[data-range]').forEach(b=> b.onclick=()=>{
+    $('rangeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    period=b.dataset.range; perOffset=0; renderCharts();
+  });
+  $('emoDrill').onclick=()=>{ emoDrilled=!emoDrilled; $('emoDrill').textContent=emoDrilled?'show clusters':'drill down'; renderEmoBars(); };
+  $('deepRow').onclick=()=>{
+    const open=$('deepBody').classList.toggle('hidden');
+    $('deepRow').classList.toggle('open', !open);
+    $('deepRow').setAttribute('aria-expanded', String(!open));
+  };
+  $('calInfo').onclick=e=>{ e.stopPropagation(); $('calPop').classList.toggle('hidden'); };
+  document.addEventListener('click', e=>{ if(!$('calPop').classList.contains('hidden') && !$('calPop').contains(e.target) && e.target!==$('calInfo')) $('calPop').classList.add('hidden'); });
+  $('calToggle').onclick=()=>{ calExpanded=!calExpanded; calWeekOffset=0; const n=new Date(); calMonth=new Date(n.getFullYear(),n.getMonth(),1); renderCalendar(); };
+  $('calPrev').onclick=()=>{ if(calExpanded){ calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()-1,1); } else calWeekOffset--; renderCalendar(); };
+  $('calNext').onclick=()=>{ if(calExpanded){ calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,1); } else calWeekOffset++; renderCalendar(); };
+  $('logFilterClear').onclick=()=>{ logFilterDay=null; renderTimeline(); };
+  $('logFilterBack').onclick=()=>{ logFilterDay=null; switchView('patterns'); };
+  $('lcPrev').onclick=()=>{ lcWeekOffset--; renderLogCal(); };
+  $('lcNext').onclick=()=>{ lcWeekOffset++; renderLogCal(); };
+  $('lcMonthBtn').onclick=()=>{ const p=$('lcMonthPanel'); const open=p.classList.toggle('hidden');
+    $('lcMonthBtn').textContent = open?'Month ▾':'Month ▴'; if(!open) renderLcMonth(); };
+  $('lcmPrev').onclick=()=>{ lcMonth=new Date(lcMonth.getFullYear(),lcMonth.getMonth()-1,1); renderLcMonth(); };
+  $('lcmNext').onclick=()=>{ lcMonth=new Date(lcMonth.getFullYear(),lcMonth.getMonth()+1,1); renderLcMonth(); };
+  $('themePill').onclick=()=>{ settings.theme = settings.theme==='dark'?'light':'dark'; kvSet('settings',settings); applyTheme(); };
+  $('noteExpand').onclick=()=>{ $('fullNote').value=$('note').value; sheet('fullNoteBg'); $('fullNote').focus(); };
+  $('fullNoteDone').onclick=()=>{ $('note').value=$('fullNote').value; sheet('fullNoteBg', false); };
+  $('editCancel').onclick=()=>{ endEdit(); toast('Edit cancelled — nothing changed.'); };
+  $('confirmOk').onclick=()=>{ sheet('confirmBg', false); if(_confirmRes){ _confirmRes(true); _confirmRes=null; } };
+  $('confirmNo').onclick=()=>{ sheet('confirmBg', false); if(_confirmRes){ _confirmRes(false); _confirmRes=null; } };
+  $('confirmBg').onclick=e=>{ if(e.target===$('confirmBg')){ sheet('confirmBg', false); if(_confirmRes){ _confirmRes(false); _confirmRes=null; } } };
+  $('perPrev').onclick=()=>{ perOffset--; renderCharts(); };
+  $('perNext').onclick=()=>{ perOffset++; renderCharts(); };
+  // care
+  $('dashPsy').onclick=()=>openDashFlow('psy');
+  $('dashTher').onclick=()=>openDashFlow('ther');
+  $('remAdd').onclick=()=>{
+    $('remLabel').value=''; sheet('remModalBg');
+    if('Notification' in window&&Notification.permission==='default') Notification.requestPermission();
+  };
+  $('remCancel').onclick=()=>sheet('remModalBg', false);
+  $('remOcc').onchange=()=>{
+    $('remDowWrap').classList.toggle('hidden', $('remOcc').value!=='weekly');
+    $('remDomWrap').classList.toggle('hidden', $('remOcc').value!=='monthly');
+  };
+  $('remSave').onclick=()=>{
+    const label=$('remLabel').value.trim()||($('remType').value==='med'?'Medicine':'Check-in');
+    const occ=$('remOcc').value;
+    settings.reminders.push({id:uid('r'), label, time:$('remTime').value, type:$('remType').value,
+      occ, dow:Number($('remDow').value), dom:Number($('remDom').value), enabled:true});
+    kvSet('settings',settings); renderReminders(); renderMedCard(); sheet('remModalBg', false);
+    toast('Reminder saved. It rings while the app is open.');
+  };
+  $('careToSettings').onclick=()=>sheet('settingsBg');
+  // consent sheet
+  $('shareRangeGrid').querySelectorAll('button').forEach(b=> b.onclick=()=>{
+    shareRangeVal=b.dataset.r;
+    $('shareRangeGrid').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+    $('shareCustom').classList.toggle('hidden', shareRangeVal!=='custom');
+  });
+  $('shareCancel').onclick=()=>sheet('shareBg', false);
+  $('shareGo').onclick=renderDash;
+  // settings
+  $('gearBtn').onclick=()=>sheet('settingsBg');
+  $('settingsClose').onclick=()=>sheet('settingsBg', false);
+  $('setName').onchange=()=>{ settings.name=$('setName').value.trim(); kvSet('settings',settings); greet(); };
+  $('regionSel').onchange=()=>{ settings.region=$('regionSel').value; kvSet('settings',settings); renderResList(); };
+  $('rowScale').onclick=()=>{ syncScaleUI(); sheet('scaleBg'); };
+  $('scaleClose').onclick=()=>sheet('scaleBg', false);
+  $('scaleSeg').querySelectorAll('button').forEach(b=> b.onclick=async ()=>{
+    if(b.dataset.scale===settings.scaleMode) return;
+    const ok=await confirmSheet('Switching changes what the numbers mean going forward. Past entries keep their original meaning and charts will note when a view mixes both. Switch?','Switch');
+    if(!ok){ syncScaleUI(); return; }
+    settings.scaleMode=b.dataset.scale; kvSet('settings',settings);
+    syncScaleUI(); renderDial(); renderEmotions(); renderCharts(); renderCalendar();
+  });
+  $('rowPool').onclick=()=>{ renderPool(); sheet('poolBg'); };
+  $('poolClose').onclick=()=>sheet('poolBg', false);
+  $('rowTiles').onclick=()=>{ renderPool(); sheet('tilesBg'); };
+  $('tilesClose').onclick=()=>sheet('tilesBg', false);
+  $('expCopy').onclick=()=>{ const l=exportList(); if(!l.length) return toast('No entries in that range.'); copyText(l, true); };
+  $('expPdf').onclick=()=>{ const l=exportList(); if(!l.length) return toast('No entries in that range.');
+    sheet('settingsBg', false); openPrintDoc(logDocHTML(l)); };
+  $('backupBtn').onclick=()=>{ const l=[...entries].sort((a,b)=>a.ts-b.ts); if(!l.length) return toast('Nothing to back up yet.');
+    download('steady-backup.json', buildJSON(l, true), 'application/json'); toast('Backup saved. Keep it somewhere safe.'); };
+  $('importBtn').onclick=()=> $('importFile').click();
+  $('importFile').onchange=e=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=''; };
+  // onboarding
+  let obScale='anchored';
+  $('obScaleSeg').querySelectorAll('button').forEach(b=> b.onclick=()=>{
+    obScale=b.dataset.scale;
+    $('obScaleSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+    $('obScaleHint').textContent = obScale==='anchored'
+      ? 'Anchored: 5–6 is steady, both ends are intense — suited to bipolar / BPD.'
+      : 'Simple: 1 is awful, 10 is great.';
+  });
+  $('obGo').onclick=async ()=>{
+    settings.name=$('obName').value.trim();
+    settings.scaleMode=obScale;
+    settings.region=$('obRegion').value;
+    settings.onboarded=true;
+    if(!settings.journeyStart) settings.journeyStart=Date.now();
+    await kvSet('settings',settings);
+    $('setName').value=settings.name; $('regionSel').value=settings.region; syncScaleUI();
+    sheet('onboardBg', false); greet(); renderDial(); renderResList(); renderCalendar();
+    toast(`✦ Day one${settings.name?', '+settings.name:''}. Today is where your journey begins. 💜`, 5200);
+  };
+}
+
+/* ============ init ============ */
+(async function init(){
+  const ok=await openDB();
+  if(!ok){ previewMode=true; $('previewBanner').classList.remove('hidden'); }
+  if(navigator.storage&&navigator.storage.persist){ try{ navigator.storage.persist(); }catch(e){} }
+  const saved=await kvGet('settings');
+  if(saved) settings=Object.assign(settings, saved);
+  entries=(await allEntries()).sort((a,b)=>b.ts-a.ts);
+  if(!settings.journeyStart){
+    settings.journeyStart=entries.length?entries[entries.length-1].ts:Date.now();
+    if(settings.onboarded) kvSet('settings',settings);
+  }
+  heldOpen=false;                       // Held close closed at launch (§0.9)
+  wireAll();
+  $('setName').value=settings.name||''; $('regionSel').value=settings.region||'IN'; syncScaleUI();
+  const today=new Date(), monthAgo=new Date(); monthAgo.setDate(today.getDate()-30);
+  $('expTo').value=dayKey(today.getTime()); $('expFrom').value=dayKey(monthAgo.getTime());
+  applyTheme(); initSheetDrag();
+  renderDial(); renderEmotions(); renderPendingPhotos(); renderTimeline(); renderCharts(); renderCalendar();
+  renderReminders(); renderMedCard(); renderQuiet(); renderResList(); renderPool(); greet();
+  if(!settings.onboarded) sheet('onboardBg');
+  setInterval(checkReminders, 20000);
+  setInterval(renderMedCard, 60000);
+  if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+})();
+</script>
+</body>
+</html>
